@@ -75,7 +75,7 @@ func (h *ProductHandler) GetProductByID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, gin.H{"message": "Product retrieved successfully", "product": dto.NewProductResponseDTO(*product)})
+	ctx.JSON(200, gin.H{"message": "Product retrieved successfully", "data": dto.NewProductResponseDTO(*product)})
 }
 
 // @Summary Get all products
@@ -97,7 +97,7 @@ func (h *ProductHandler) GetAllProducts(ctx *gin.Context) {
 		productDTOs = append(productDTOs, dto.NewProductResponseDTO(*p))
 	}
 
-	ctx.JSON(200, gin.H{"message": "Products retrieved successfully", "products": productDTOs})
+	ctx.JSON(200, gin.H{"message": "Products retrieved successfully", "data": productDTOs})
 }
 
 // @Summary Update a product
@@ -123,7 +123,7 @@ func (h *ProductHandler) UpdateProduct(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, gin.H{"message": "Product updated successfully", "product": dto.NewProductResponseDTO(*product)})
+	ctx.JSON(200, gin.H{"message": "Product updated successfully", "data": dto.NewProductResponseDTO(*product)})
 }
 
 // @Summary Delete a product
