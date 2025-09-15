@@ -176,5 +176,5 @@ func (h *ProductHandler) GetProductsByCategoryID(ctx *gin.Context) {
 		productDTOs = append(productDTOs, dto.NewProductResponseDTO(*p))
 	}
 
-	ctx.JSON(200, gin.H{"message": "Products retrieved successfully", "products": productDTOs})
+	ctx.JSON(200, gin.H{"message": "Products retrieved successfully", "data": productDTOs})
 }

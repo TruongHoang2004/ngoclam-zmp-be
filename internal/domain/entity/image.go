@@ -25,6 +25,8 @@ func NewImage(imagePath string, isPrimary bool) *Image {
 type ImageRepository interface {
 	SaveFile(ctx context.Context, file *multipart.FileHeader) (*Image, error)
 	FindByID(ctx context.Context, id uint) (*Image, error)
+	SetImageLocation(ctx context.Context, imageID uint, location string) error
+	FindByPlacement(ctx context.Context, location string) ([]*Image, error)
 	FindAll(ctx context.Context) ([]*Image, error)
 	Delete(ctx context.Context, id uint) error
 }

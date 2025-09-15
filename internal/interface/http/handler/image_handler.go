@@ -25,6 +25,8 @@ func (h *ImageHandler) RegisterRoutes(g *gin.RouterGroup) {
 		image.GET("/:id", h.GetImage)
 		image.DELETE("/:id", h.DeleteImage)
 		image.GET("", h.ListImages)
+		image.POST("/location", h.SetImageLocation)
+		image.GET("/location", h.GetImagesByLocation)
 	}
 }
 
@@ -88,6 +90,65 @@ func (h *ImageHandler) GetImage(ctx *gin.Context) {
 
 	ctx.JSON(200, gin.H{
 		"data": image,
+	})
+}
+
+// @Summary Get images by location
+// @Description Get images by location
+// @Tags images
+// @Accept json
+// @Produce json
+// @Param location query string true "Image location"
+// @Success 200 {array} map[string]interface{} "Returns list of images"
+// @Router /images/location [get]
+func (h *ImageHandler) GetImagesByLocation(ctx *gin.Context) {
+	location := ctx.Query("location")
+	if location == "" {
+		application.HandleError(ctx, application.NewInvalidParamError("location"))
+		return
+	}
+
+	images, err := h.imageService.GetImageByLocation(ctx, location)
+	if err != nil {
+		application.HandleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(200, gin.H{
+		"data": images,
+	})
+}
+
+// @Summary Set image location
+// @Description Set image location
+// @Tags images
+// @Accept json
+// @Produce json
+// @Param id query int true "Image ID"
+// @Param location query string true "Image location"
+// @Success 200 {object} map[string]interface{} "Returns updated image data"
+// @Router /images/location [post]
+func (h *ImageHandler) SetImageLocation(ctx *gin.Context) {
+	id, err := ConvertStringToUint(ctx.Query("id"))
+	if err != nil {
+		application.HandleError(ctx, application.NewInvalidParamError("id"))
+		return
+	}
+
+	location := ctx.Query("location")
+	if location == "" {
+		application.HandleError(ctx, application.NewInvalidParamError("location"))
+		return
+	}
+
+	err = h.imageService.SetImageLocation(ctx, id, location)
+	if err != nil {
+		application.HandleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(200, gin.H{
+		"message": "Image location updated successfully",
 	})
 }
 

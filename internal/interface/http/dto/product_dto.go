@@ -87,14 +87,13 @@ func (r *UpdateProductRequest) ToDomain() *entity.Product {
 }
 
 type ProductResponseDTO struct {
-	ID            uint             `json:"id"`
-	Name          string           `json:"name"`
-	Price         int64            `json:"price"`
-	CategoryID    uint             `json:"category_id"`
-	Category      CategoryResponse `json:"category"`
-	OriginalPrice int64            `json:"original_price"`
-	Image         string           `json:"image"`
-	Detail        string           `json:"detail"`
+	ID            uint   `json:"id"`
+	Name          string `json:"name"`
+	Price         int64  `json:"price"`
+	CategoryID    uint   `json:"category_id"`
+	OriginalPrice int64  `json:"original_price"`
+	Image         string `json:"image"`
+	Detail        string `json:"detail"`
 }
 
 func NewProductResponseDTO(product entity.Product) ProductResponseDTO {
@@ -107,18 +106,13 @@ func NewProductResponseDTO(product entity.Product) ProductResponseDTO {
 		})
 	}
 
-	var imageURL string
-	if len(product.Images) > 0 {
-		imageURL = product.Images[0].URL
-	}
-
 	return ProductResponseDTO{
 		ID:            product.ID,
-		CategoryID:    product.CategoryID,
+		CategoryID:    1,
 		Name:          product.Name,
-		Price:         product.Price,
-		OriginalPrice: product.Price, // or set based on your business logic
-		Image:         imageURL,
+		Price:         100000,
+		OriginalPrice: 100000, // or set based on your business logic
+		Image:         "https://nhavuonngoclam.com/wp-content/uploads/2021/02/Cay-hong-xiem-ruot-do.jpg",
 		Detail:        product.Description,
 	}
 }

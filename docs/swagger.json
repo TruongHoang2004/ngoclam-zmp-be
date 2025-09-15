@@ -140,6 +140,80 @@
                 }
             }
         },
+        "/images/location": {
+            "get": {
+                "description": "Get images by location",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "images"
+                ],
+                "summary": "Get images by location",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Image location",
+                        "name": "location",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns list of images",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Set image location",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "images"
+                ],
+                "summary": "Set image location",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Image ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Image location",
+                        "name": "location",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns updated image data",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/images/{id}": {
             "get": {
                 "description": "Get an image by ID",
@@ -409,7 +483,8 @@
                     "type": "integer"
                 },
                 "image": {
-                    "$ref": "#/definitions/dto.ImageResponse"
+                    "description": "URL of the image",
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -480,49 +555,29 @@
                 }
             }
         },
-        "dto.ImageResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.ProductResponseDTO": {
             "type": "object",
             "properties": {
-                "category": {
-                    "$ref": "#/definitions/dto.CategoryResponse"
-                },
                 "category_id": {
                     "type": "integer"
                 },
-                "description": {
+                "detail": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "images": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.ImageResponse"
-                    }
+                "image": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "price": {
+                "original_price": {
                     "type": "integer"
                 },
-                "variants": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.VariantDTO"
-                    }
+                "price": {
+                    "type": "integer"
                 }
             }
         },

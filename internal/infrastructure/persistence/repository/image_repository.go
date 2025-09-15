@@ -13,6 +13,7 @@ import (
 	"github.com/imagekit-developer/imagekit-go"
 	"github.com/imagekit-developer/imagekit-go/api/uploader"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain/entity"
@@ -113,6 +114,18 @@ func (r *ImageRepositoryImpl) SaveFile(ctx context.Context, file *multipart.File
 	return img.ToDomain(), nil
 }
 
+func (r *ImageRepositoryImpl) SetImageLocation(ctx context.Context, imageID uint, location string) error {
+	imgPlacement := &model.ImagePlacement{
+		ImageID:  imageID,
+		Location: location,
+	}
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "image_id"}, {Name: "location"}},
+		UpdateAll: true,
+	}).Create(imgPlacement).Error
+
+}
+
 func (r *ImageRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity.Image, error) {
 	var img model.Image
 	if err := r.db.WithContext(ctx).First(&img, id).Error; err != nil {
@@ -121,6 +134,23 @@ func (r *ImageRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity.Im
 	return img.ToDomain(), nil
 }
 
+// FindByPlacement implements entity.ImageRepository.
+func (r *ImageRepositoryImpl) FindByPlacement(ctx context.Context, location string) ([]*entity.Image, error) {
+	var imgs []model.Image
+	if err := r.db.WithContext(ctx).
+		Joins("JOIN image_placements ON images.id = image_placements.image_id").
+		Where("image_placements.location = ?", location).
+		Find(&imgs).Error; err != nil {
+		return nil, err
+	}
+	result := make([]*entity.Image, len(imgs))
+	for i, img := range imgs {
+		result[i] = img.ToDomain()
+	}
+	return result, nil
+}
+
+// FindAll implements entity.ImageRepository.
 func (r *ImageRepositoryImpl) FindAll(ctx context.Context) ([]*entity.Image, error) {
 	var imgs []model.Image
 	if err := r.db.WithContext(ctx).Find(&imgs).Error; err != nil {

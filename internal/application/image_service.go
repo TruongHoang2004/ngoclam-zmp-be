@@ -42,6 +42,21 @@ func (s *ImageService) GetImageByID(ctx context.Context, id uint) (*entity.Image
 	return image, nil
 }
 
+func (s *ImageService) GetImageByLocation(ctx context.Context, location string) ([]*entity.Image, error) {
+	images, err := s.imageRepo.FindByPlacement(ctx, location)
+	if err != nil {
+		return nil, NewNotFoundError(fmt.Sprintf("cannot find images by location: %v", err))
+	}
+	return images, nil
+}
+
+func (s *ImageService) SetImageLocation(ctx context.Context, imageID uint, location string) error {
+	if err := s.imageRepo.SetImageLocation(ctx, imageID, location); err != nil {
+		return fmt.Errorf("cannot set image location: %w", err)
+	}
+	return nil
+}
+
 func (s *ImageService) ListImages(ctx context.Context) ([]*entity.Image, error) {
 	images, err := s.imageRepo.FindAll(ctx)
 	if err != nil {

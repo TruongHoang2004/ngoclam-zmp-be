@@ -6,7 +6,8 @@ definitions:
       id:
         type: integer
       image:
-        $ref: '#/definitions/dto.ImageResponse'
+        description: URL of the image
+        type: string
       name:
         type: string
     type: object
@@ -53,35 +54,22 @@ definitions:
     - price
     - sku
     type: object
-  dto.ImageResponse:
-    properties:
-      id:
-        type: integer
-      url:
-        type: string
-    type: object
   dto.ProductResponseDTO:
     properties:
-      category:
-        $ref: '#/definitions/dto.CategoryResponse'
       category_id:
         type: integer
-      description:
+      detail:
         type: string
       id:
         type: integer
-      images:
-        items:
-          $ref: '#/definitions/dto.ImageResponse'
-        type: array
+      image:
+        type: string
       name:
         type: string
+      original_price:
+        type: integer
       price:
         type: integer
-      variants:
-        items:
-          $ref: '#/definitions/dto.VariantDTO'
-        type: array
     type: object
   dto.UpdateProductRequest:
     properties:
@@ -247,6 +235,56 @@ paths:
             additionalProperties: true
             type: object
       summary: Get an image by ID
+      tags:
+      - images
+  /images/location:
+    get:
+      consumes:
+      - application/json
+      description: Get images by location
+      parameters:
+      - description: Image location
+        in: query
+        name: location
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns list of images
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: Get images by location
+      tags:
+      - images
+    post:
+      consumes:
+      - application/json
+      description: Set image location
+      parameters:
+      - description: Image ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Image location
+        in: query
+        name: location
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns updated image data
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Set image location
       tags:
       - images
   /products:
