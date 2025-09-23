@@ -9,6 +9,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"time"
 
 	"github.com/imagekit-developer/imagekit-go"
 	"github.com/imagekit-developer/imagekit-go/api/uploader"
@@ -114,16 +115,37 @@ func (r *ImageRepositoryImpl) SaveFile(ctx context.Context, file *multipart.File
 	return img.ToDomain(), nil
 }
 
+// SetImageLocation chèn hoặc cập nhật ImagePlacement, tự động tăng DisplayOrder
 func (r *ImageRepositoryImpl) SetImageLocation(ctx context.Context, imageID uint, location string) error {
-	imgPlacement := &model.ImagePlacement{
-		ImageID:  imageID,
-		Location: location,
+	var maxOrder int
+
+	// Lấy max(display_order) hiện tại
+	err := r.db.WithContext(ctx).
+		Model(&model.ImagePlacement{}).
+		Where("location = ?", location).
+		Select("COALESCE(MAX(display_order), 0)").
+		Scan(&maxOrder).Error
+	if err != nil {
+		return err
 	}
-	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+
+	imgPlacement := &model.ImagePlacement{
+		ImageID:      imageID,
+		Location:     location,
+		DisplayOrder: maxOrder + 1,
+		CreatedAt:    time.Now().Unix(),
+		UpdatedAt:    time.Now().Unix(),
+	}
+
+	// ON CONFLICT: cần unique constraint trên (image_id, location)
+	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "image_id"}, {Name: "location"}},
 		UpdateAll: true,
-	}).Create(imgPlacement).Error
+	}).Create(imgPlacement).Error; err != nil {
+		return err
+	}
 
+	return nil
 }
 
 func (r *ImageRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity.Image, error) {
