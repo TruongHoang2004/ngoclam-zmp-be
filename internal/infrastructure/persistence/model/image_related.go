@@ -13,6 +13,8 @@ type ImageRelated struct {
 	EntityID   uint       `gorm:"column:entity_id;not null"`
 	EntityType EntityType `gorm:"column:entity_type;not null"`
 	Order      int        `gorm:"column:order;default:0"`
+
+	Image Image `gorm:"foreignKey:ImageID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (ImageRelated) TableName() string {

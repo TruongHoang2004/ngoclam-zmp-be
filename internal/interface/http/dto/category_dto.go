@@ -18,7 +18,7 @@ func (r *CreateCategoryRequest) ToDomain() *entity.Category {
 	return &entity.Category{
 		Name:        r.Name,
 		Description: r.Description,
-		Image:       image,
+		Image:       &image,
 	}
 }
 
@@ -36,11 +36,14 @@ type CategoryResponse struct {
 }
 
 func NewCategoryResponse(category entity.Category) CategoryResponse {
+	var imageURL string = ""
+	if category.Image != nil {
+		imageURL = category.Image.URL
+	}
 	return CategoryResponse{
 		ID:          category.ID,
 		Name:        category.Name,
 		Description: category.Description,
-		// Image:       category.Image.URL,
-		Image: "https://nhavuonngoclam.com/wp-content/uploads/2021/02/Nho-than-go.jpg",
+		Image:       imageURL,
 	}
 }

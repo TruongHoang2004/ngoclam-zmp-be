@@ -10,7 +10,7 @@ type Category struct {
 	ID          uint
 	Name        string
 	Description string
-	Image       Image
+	Image       *Image
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

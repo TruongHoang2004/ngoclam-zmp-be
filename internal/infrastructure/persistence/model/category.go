@@ -37,10 +37,10 @@ func MapCategoryToModel(category *entity.Category) *Category {
 	}
 }
 
-func (c *Category) ToDomain(imageModel *Image) *entity.Category {
-	var image entity.Image
-	if imageModel != nil {
-		image = *imageModel.ToDomain()
+func (c *Category) ToDomain() *entity.Category {
+	var image *entity.Image = nil
+	if c.ImageRelated != nil {
+		image = c.ImageRelated.Image.ToDomain()
 	}
 	return &entity.Category{
 		ID:          c.ID,

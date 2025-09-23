@@ -76,7 +76,7 @@ func (p *Product) ToDomain() *entity.Product {
 
 	var category entity.Category
 	if p.Category != nil {
-		category = *p.Category.ToDomain(nil)
+		category = *p.Category.ToDomain()
 	}
 
 	return &entity.Product{
