@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/application"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/interface/http/dto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,6 +22,7 @@ func (h *ImageHandler) RegisterRoutes(g *gin.RouterGroup) {
 	// Register image-related routes here
 	image := g.Group("/images")
 	{
+		image.POST("/url", h.UploadImageByURL)
 		image.POST("", h.UploadImage)
 		image.GET("/:id", h.GetImage)
 		image.DELETE("/:id", h.DeleteImage)
@@ -28,6 +30,33 @@ func (h *ImageHandler) RegisterRoutes(g *gin.RouterGroup) {
 		image.POST("/location", h.SetImageLocation)
 		image.GET("/location", h.GetImagesByLocation)
 	}
+}
+
+// @Summary Upload an image by URL
+// @Description Upload an image by URL
+// @Tags images
+// @Accept json
+// @Produce json
+// @Param url body dto.CreateImageRequest true "Image URL"
+// @Success 200 {object} map[string]interface{} "Returns uploaded image data"
+// @Router /images/url [post]
+func (h *ImageHandler) UploadImageByURL(ctx *gin.Context) {
+	var req dto.CreateImageRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		application.HandleError(ctx, application.NewInvalidParamError("url"))
+		return
+	}
+
+	image, err := h.imageService.SaveImageByURL(ctx, req.URL)
+	if err != nil {
+		application.HandleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(200, gin.H{
+		"message": "Image uploaded successfully",
+		"data":    image,
+	})
 }
 
 // @Summary Upload an image

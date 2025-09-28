@@ -23,6 +23,7 @@ func NewImage(imagePath string, isPrimary bool) *Image {
 }
 
 type ImageRepository interface {
+	SaveByURL(ctx context.Context, url string) (*Image, error)
 	SaveFile(ctx context.Context, file *multipart.FileHeader) (*Image, error)
 	FindByID(ctx context.Context, id uint) (*Image, error)
 	SetImageLocation(ctx context.Context, imageID uint, location string) error

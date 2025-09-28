@@ -1,14 +1,18 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/imagekit-developer/imagekit-go"
@@ -34,6 +38,80 @@ func NewImageRepository(db *gorm.DB, cfg *config.Config) entity.ImageRepository 
 	})
 
 	return &ImageRepositoryImpl{db: db, ik: ik}
+}
+
+func (r *ImageRepositoryImpl) SaveByURL(ctx context.Context, url string) (*entity.Image, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download image: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download image: status %d", resp.StatusCode)
+	}
+
+	// Hash + lưu vào buffer
+	hasher := sha256.New()
+	buf := &bytes.Buffer{}
+	if _, err := io.Copy(io.MultiWriter(hasher, buf), resp.Body); err != nil {
+		return nil, fmt.Errorf("failed to read image data: %w", err)
+	}
+	fileHash := fmt.Sprintf("%x", hasher.Sum(nil))
+	imgData := buf.Bytes()
+
+	// Detect content-type
+	ct := http.DetectContentType(imgData)
+	allowed := map[string]bool{
+		"image/jpeg":    true,
+		"image/png":     true,
+		"image/gif":     true,
+		"image/webp":    true,
+		"image/svg+xml": true,
+	}
+	if !allowed[ct] {
+		return nil, fmt.Errorf("unsupported content type: %s", ct)
+	}
+
+	// Check duplicate
+	var existing model.ImageModel
+	if err := r.db.WithContext(ctx).Where("hash = ?", fileHash).First(&existing).Error; err == nil {
+		return existing.ToDomain(), nil
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	// Filename
+	filename := path.Base(url)
+	if filename == "" || filename == "/" {
+		filename = "downloaded"
+	}
+	if exts, _ := mime.ExtensionsByType(ct); len(exts) > 0 && !strings.HasSuffix(filename, exts[0]) {
+		filename += exts[0]
+	}
+
+	// Upload
+	trueValue := true
+	uploadRes, err := r.ik.Uploader.Upload(ctx, bytes.NewReader(imgData), uploader.UploadParam{
+		FileName:          filename,
+		UseUniqueFileName: &trueValue,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("upload to imagekit failed: %w", err)
+	}
+
+	// Save DB
+	img := &model.ImageModel{
+		URL:      uploadRes.Data.Url,
+		Hash:     fileHash,
+		IKFileID: uploadRes.Data.FileId,
+	}
+	if err := r.db.WithContext(ctx).Create(img).Error; err != nil {
+		_, _ = r.ik.Media.DeleteFile(context.Background(), uploadRes.Data.FileId)
+		return nil, err
+	}
+
+	return img.ToDomain(), nil
 }
 
 // SaveFile upload file lên ImageKit và insert DB record

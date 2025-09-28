@@ -23,6 +23,13 @@ definitions:
     - description
     - name
     type: object
+  dto.CreateImageRequest:
+    properties:
+      url:
+        type: string
+    required:
+    - url
+    type: object
   dto.CreateProductRequest:
     properties:
       category_id:
@@ -299,6 +306,29 @@ paths:
             additionalProperties: true
             type: object
       summary: Set image location
+      tags:
+      - images
+  /images/url:
+    post:
+      consumes:
+      - application/json
+      description: Upload an image by URL
+      parameters:
+      - description: Image URL
+        in: body
+        name: url
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateImageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns uploaded image data
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload an image by URL
       tags:
       - images
   /products:

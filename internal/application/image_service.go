@@ -18,6 +18,17 @@ func NewImageService(imageRepo entity.ImageRepository) *ImageService {
 	}
 }
 
+func (s *ImageService) SaveImageByURL(ctx context.Context, url string) (*entity.Image, error) {
+	image, err := s.imageRepo.SaveByURL(ctx, url)
+	if err != nil {
+		if err.Error() == "ERROR: duplicate key value violates unique constraint \"idx_images_hash\" (SQLSTATE 23505)" {
+			return nil, NewConflictError("image already exists")
+		}
+		return nil, NewInternalServerError(fmt.Sprintf("cannot save image by URL: %v", err))
+	}
+	return image, nil
+}
+
 func (s *ImageService) UploadImage(ctx context.Context, fileHeader *multipart.FileHeader) (*entity.Image, error) {
 	// Validate file size (e.g., max 5MB)
 	const maxFileSize = 5 << 20 // 5MB

@@ -225,6 +225,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/images/url": {
+            "post": {
+                "description": "Upload an image by URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "images"
+                ],
+                "summary": "Upload an image by URL",
+                "parameters": [
+                    {
+                        "description": "Image URL",
+                        "name": "url",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateImageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns uploaded image data",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/images/{id}": {
             "get": {
                 "description": "Get an image by ID",
@@ -516,6 +551,17 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateImageRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "url": {
                     "type": "string"
                 }
             }
