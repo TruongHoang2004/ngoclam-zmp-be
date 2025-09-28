@@ -42,10 +42,10 @@ func (p *ProductRepositoryImpl) Create(ctx context.Context, product entity.Produ
 
 func (p *ProductRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity.Product, error) {
 	var productModel model.Product
-	if err := p.db.WithContext(ctx).Preload("Category.ImageRelated").Preload("Images").Preload("Variants").First(&productModel, id).Error; err != nil {
+	if err := p.db.WithContext(ctx).Preload("Category.ImageRelated").Preload("Images").Preload("Variants").Preload("Images.Image").Preload("Variants.Image").First(&productModel, id).Error; err != nil {
 		return nil, err
 	}
-	var imageModels []model.Image
+	var imageModels []model.ImageModel
 	if productModel.Images != nil {
 		imageIDs := make([]uint, len(productModel.Images))
 		for i, img := range productModel.Images {
@@ -63,13 +63,13 @@ func (p *ProductRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity.
 
 func (p *ProductRepositoryImpl) FindAll(ctx context.Context) ([]*entity.Product, error) {
 	var productModels []model.Product
-	if err := p.db.WithContext(ctx).Preload("Category.ImageRelated").Preload("Images").Preload("Variants").Find(&productModels).Error; err != nil {
+	if err := p.db.WithContext(ctx).Preload("Category.ImageRelated").Preload("Images.Image").Preload("Variants").Preload("Variants.Image").Find(&productModels).Error; err != nil {
 		return nil, err
 	}
 
 	products := make([]*entity.Product, len(productModels))
 	for i, pm := range productModels {
-		var imageModels []model.Image
+		var imageModels []model.ImageModel
 		if pm.Images != nil {
 			imageIDs := make([]uint, len(pm.Images))
 			for j, img := range pm.Images {
@@ -107,7 +107,7 @@ func (p *ProductRepositoryImpl) FindByCategoryID(ctx context.Context, categoryID
 
 	products := make([]*entity.Product, len(productModels))
 	for i, pm := range productModels {
-		var imageModels []model.Image
+		var imageModels []model.ImageModel
 		if pm.Images != nil {
 			imageIDs := make([]uint, len(pm.Images))
 			for j, img := range pm.Images {

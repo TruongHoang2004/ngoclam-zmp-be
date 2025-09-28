@@ -7,26 +7,30 @@ import (
 	"gorm.io/gorm"
 )
 
-type Category struct {
+type CategoryModel struct {
 	ID          uint   `gorm:"primaryKey;autoIncrement"`
 	Name        string `gorm:"type:varchar(100);not null"`
 	Description string `gorm:"type:text"`
 
-	ImageRelated *ImageRelated `gorm:"polymorphic:Entity;polymorphicValue:category"`
-	Products     *[]Product    `gorm:"foreignKey:CategoryID"`
+	ImageRelated *ImageRelatedModel `gorm:"polymorphic:Entity;polymorphicValue:category"`
+	Products     *[]Product         `gorm:"foreignKey:CategoryID"`
 
 	CreatedAt time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-func MapCategoryToModel(category *entity.Category) *Category {
+func (CategoryModel) TableName() string {
+	return "categories"
+}
 
-	return &Category{
+func MapCategoryToModel(category *entity.Category) *CategoryModel {
+
+	return &CategoryModel{
 		ID:          category.ID,
 		Name:        category.Name,
 		Description: category.Description,
-		ImageRelated: &ImageRelated{
+		ImageRelated: &ImageRelatedModel{
 			ImageID:    category.Image.ID,
 			EntityID:   category.ID,
 			EntityType: EntityTypeCategory,
@@ -37,7 +41,7 @@ func MapCategoryToModel(category *entity.Category) *Category {
 	}
 }
 
-func (c *Category) ToDomain() *entity.Category {
+func (c *CategoryModel) ToDomain() *entity.Category {
 	var image *entity.Image = nil
 	if c.ImageRelated != nil {
 		image = c.ImageRelated.Image.ToDomain()

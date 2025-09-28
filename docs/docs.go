@@ -543,6 +543,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "price": {
+                    "description": "nullable",
+                    "type": "integer"
+                },
                 "variants": {
                     "type": "array",
                     "items": {
@@ -558,6 +562,10 @@ const docTemplate = `{
                 "sku"
             ],
             "properties": {
+                "image_id": {
+                    "description": "nullable",
+                    "type": "integer"
+                },
                 "price": {
                     "type": "integer"
                 },
@@ -578,8 +586,11 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "image": {
-                    "type": "string"
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "name": {
                     "type": "string"
@@ -589,6 +600,12 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "integer"
+                },
+                "variants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.VariantDTO"
+                    }
                 }
             }
         },
@@ -632,6 +649,9 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "integer"
+                },
+                "image": {
+                    "type": "string"
                 },
                 "price": {
                     "type": "integer"

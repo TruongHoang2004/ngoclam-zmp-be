@@ -71,7 +71,7 @@ func (r *ImageRepositoryImpl) SaveFile(ctx context.Context, file *multipart.File
 	fileHash := fmt.Sprintf("%x", hash.Sum(nil))
 
 	// kiểm tra trùng lặp trong DB
-	var existing model.Image
+	var existing model.ImageModel
 	if err := r.db.WithContext(ctx).Where("hash = ?", fileHash).First(&existing).Error; err == nil {
 		return existing.ToDomain(), nil
 	} else if err != gorm.ErrRecordNotFound {
@@ -101,7 +101,7 @@ func (r *ImageRepositoryImpl) SaveFile(ctx context.Context, file *multipart.File
 	}
 
 	// lưu metadata vào DB
-	img := &model.Image{
+	img := &model.ImageModel{
 		URL:      uploadRes.Data.Url,    // URL public của ảnh
 		Hash:     fileHash,              // checksum để chống trùng
 		IKFileID: uploadRes.Data.FileId, // để xóa ảnh sau này
@@ -149,7 +149,7 @@ func (r *ImageRepositoryImpl) SetImageLocation(ctx context.Context, imageID uint
 }
 
 func (r *ImageRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity.Image, error) {
-	var img model.Image
+	var img model.ImageModel
 	if err := r.db.WithContext(ctx).First(&img, id).Error; err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (r *ImageRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity.Im
 
 // FindByPlacement implements entity.ImageRepository.
 func (r *ImageRepositoryImpl) FindByPlacement(ctx context.Context, location string) ([]*entity.Image, error) {
-	var imgs []model.Image
+	var imgs []model.ImageModel
 	if err := r.db.WithContext(ctx).
 		Joins("JOIN image_placements ON images.id = image_placements.image_id").
 		Where("image_placements.location = ?", location).
@@ -174,7 +174,7 @@ func (r *ImageRepositoryImpl) FindByPlacement(ctx context.Context, location stri
 
 // FindAll implements entity.ImageRepository.
 func (r *ImageRepositoryImpl) FindAll(ctx context.Context) ([]*entity.Image, error) {
-	var imgs []model.Image
+	var imgs []model.ImageModel
 	if err := r.db.WithContext(ctx).Find(&imgs).Error; err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (r *ImageRepositoryImpl) FindAll(ctx context.Context) ([]*entity.Image, err
 }
 
 func (r *ImageRepositoryImpl) Delete(ctx context.Context, id uint) error {
-	var img model.Image
+	var img model.ImageModel
 	if err := r.db.WithContext(ctx).First(&img, id).Error; err != nil {
 		return err
 	}

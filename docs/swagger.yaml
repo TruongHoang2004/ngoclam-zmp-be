@@ -35,6 +35,9 @@ definitions:
         type: array
       name:
         type: string
+      price:
+        description: nullable
+        type: integer
       variants:
         items:
           $ref: '#/definitions/dto.CreateVariantDTO'
@@ -46,6 +49,9 @@ definitions:
     type: object
   dto.CreateVariantDTO:
     properties:
+      image_id:
+        description: nullable
+        type: integer
       price:
         type: integer
       sku:
@@ -62,14 +68,20 @@ definitions:
         type: string
       id:
         type: integer
-      image:
-        type: string
+      images:
+        items:
+          type: string
+        type: array
       name:
         type: string
       original_price:
         type: integer
       price:
         type: integer
+      variants:
+        items:
+          $ref: '#/definitions/dto.VariantDTO'
+        type: array
     type: object
   dto.UpdateProductRequest:
     properties:
@@ -99,6 +111,8 @@ definitions:
     properties:
       id:
         type: integer
+      image:
+        type: string
       price:
         type: integer
       sku:

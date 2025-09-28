@@ -14,18 +14,18 @@ type Product struct {
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 
-	CategoryID *uint          `gorm:"index"`
-	Category   *Category      `gorm:"foreignKey:CategoryID"`
-	Images     []ImageRelated `gorm:"polymorphic:Entity;polymorphicValue:product;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Variants   []VariantModel `gorm:"foreignKey:ProductID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CategoryID *uint               `gorm:"index"`
+	Category   *CategoryModel      `gorm:"foreignKey:CategoryID"`
+	Images     []ImageRelatedModel `gorm:"polymorphic:Entity;polymorphicValue:product;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Variants   []VariantModel      `gorm:"foreignKey:ProductID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func MapProductToModel(product *entity.Product) *Product {
 
-	var images []ImageRelated
+	var images []ImageRelatedModel
 	if product.Images != nil {
 		for _, img := range product.Images {
-			images = append(images, ImageRelated{
+			images = append(images, ImageRelatedModel{
 				ImageID:  img.ID,
 				EntityID: product.ID,
 			})
@@ -36,9 +36,16 @@ func MapProductToModel(product *entity.Product) *Product {
 	if product.Variants != nil {
 		for _, v := range product.Variants {
 			variants = append(variants, VariantModel{
-				ID:        v.ID,
-				SKU:       v.SKU,
-				Price:     v.Price,
+				ID:    v.ID,
+				SKU:   v.SKU,
+				Price: v.Price,
+				ImageID: func() *uint {
+					if v.Image != nil {
+						return &v.Image.ID
+					} else {
+						return nil
+					}
+				}(),
 				ProductID: product.ID,
 			})
 		}
@@ -68,8 +75,8 @@ func (p *Product) ToDomain() *entity.Product {
 	if p.Images != nil {
 		for _, imgRel := range p.Images {
 			images = append(images, entity.Image{
-				ID:   imgRel.ImageID,
-				Path: "", // Path will be populated later
+				ID:  imgRel.Image.ID,
+				URL: imgRel.Image.URL,
 			})
 		}
 	}

@@ -3,14 +3,16 @@ package dto
 import "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain/entity"
 
 type CreateVariantDTO struct {
-	SKU   string `json:"sku" binding:"required"`
-	Price int64  `json:"price" binding:"required,gt=0"`
+	SKU     string `json:"sku" binding:"required"`
+	Price   int64  `json:"price" binding:"required,gt=0"`
+	ImageID *uint  `json:"image_id"` // nullable
 }
 
 type VariantDTO struct {
-	ID    uint   `json:"id"`
-	SKU   string `json:"sku"`
-	Price int64  `json:"price"`
+	ID    uint    `json:"id"`
+	SKU   string  `json:"sku"`
+	Price int64   `json:"price"`
+	Image *string `json:"image"`
 }
 
 type VariantResponse struct {
@@ -21,6 +23,7 @@ type CreateProductRequest struct {
 	Name        string             `json:"name" binding:"required"`
 	Description string             `json:"description"`
 	CategoryID  uint               `json:"category_id" binding:"required"`
+	Price       *int64             `json:"price"` // nullable
 	Variants    []CreateVariantDTO `json:"variants" binding:"required,dive"`
 	ImageIDs    []uint             `json:"image_ids"`
 }
@@ -31,6 +34,9 @@ func (r *CreateProductRequest) ToDomain() *entity.Product {
 		variants = append(variants, entity.Variant{
 			SKU:   v.SKU,
 			Price: v.Price,
+			Image: &entity.Image{
+				ID: *v.ImageID,
+			},
 		})
 	}
 
@@ -87,13 +93,14 @@ func (r *UpdateProductRequest) ToDomain() *entity.Product {
 }
 
 type ProductResponseDTO struct {
-	ID            uint   `json:"id"`
-	Name          string `json:"name"`
-	Price         int64  `json:"price"`
-	CategoryID    uint   `json:"category_id"`
-	OriginalPrice int64  `json:"original_price"`
-	Image         string `json:"image"`
-	Detail        string `json:"detail"`
+	ID            uint         `json:"id"`
+	Name          string       `json:"name"`
+	Price         int64        `json:"price"`
+	CategoryID    uint         `json:"category_id"`
+	OriginalPrice int64        `json:"original_price"`
+	Images        []string     `json:"images"`
+	Detail        string       `json:"detail"`
+	Variants      []VariantDTO `json:"variants"`
 }
 
 func NewProductResponseDTO(product entity.Product) ProductResponseDTO {
@@ -103,16 +110,26 @@ func NewProductResponseDTO(product entity.Product) ProductResponseDTO {
 			ID:    v.ID,
 			SKU:   v.SKU,
 			Price: v.Price,
+			Image: func() *string {
+				if v.Image != nil {
+					return &v.Image.URL
+				}
+				return nil
+			}(),
 		})
 	}
 
+	var images []string
+	for _, img := range product.Images {
+		images = append(images, img.URL)
+	}
+
 	return ProductResponseDTO{
-		ID:            product.ID,
-		CategoryID:    1,
-		Name:          product.Name,
-		Price:         100000,
-		OriginalPrice: 100000, // or set based on your business logic
-		Image:         "https://nhavuonngoclam.com/wp-content/uploads/2021/02/Cay-hong-xiem-ruot-do.jpg",
-		Detail:        product.Description,
+		ID:         product.ID,
+		CategoryID: product.CategoryID,
+		Name:       product.Name,
+		Variants:   variants,
+		Images:     images,
+		Detail:     product.Description,
 	}
 }

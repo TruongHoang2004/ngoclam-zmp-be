@@ -9,6 +9,7 @@ type Variant struct {
 	SKU       string
 	Price     int64
 
+	Image     *Image
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

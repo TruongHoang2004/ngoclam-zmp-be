@@ -1,4 +1,4 @@
-h1:+gBfqn6UDwvm13qPjbL6vByFtV4gbjweQjd9+J6EuBk=
+h1:odWWK84kl1TsFjXGkntWmHJNc5ivhI/k8TsUctEr63Y=
 20250907035828_init.sql h1:3MB3pFloqlW1XoRpkCQg/db8plnHm9QwIFbkMUpBGS0=
 20250907081701_add_product_variant.sql h1:ksxR7B677OPichz7NQYJW3sInKfDPcCfChqQ1xXjyos=
 20250907083336_use_polymorphic.sql h1:hf8tNc9vc5m12f2nJYkk9bcqDy+qVc9wAf/6qPuRzgI=
@@ -6,3 +6,5 @@ h1:+gBfqn6UDwvm13qPjbL6vByFtV4gbjweQjd9+J6EuBk=
 20250922192108_add_image_place_order.sql h1:15j9oBpGyMp+YsRZ7nWAHxwkgwD3/TUI/a6KRYxP7I0=
 20250922193044_change_order_name.sql h1:yQ8dNnHR3XuCNY2eSigSPYIxpOL2UYYgaQV28HjiRh8=
 20250922194227_add_unique_index.sql h1:iNmHEElnuxDKQtl2W7+nPFryBzebFvmXu1BPtWr7S0w=
+20250928094927_add_image_to_variant.sql h1:LAXtZdl+6ZuvjvAKrPsfskvvuAW6uOOgnGLC5K40s74=
+20250928095605_change_table_name.sql h1:w0HIM4Xn7F5y+mGW9hd9NfPVfNPgTzUGLMOzQ0lHOVE=

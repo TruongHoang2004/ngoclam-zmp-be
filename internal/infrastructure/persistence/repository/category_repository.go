@@ -39,7 +39,7 @@ func (c *CategoryRepositoryImpl) Create(ctx context.Context, category *entity.Ca
 
 // FindByID returns category by ID with optional image
 func (c *CategoryRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity.Category, error) {
-	var categoryModel model.Category
+	var categoryModel model.CategoryModel
 	if err := c.db.WithContext(ctx).Preload("ImageRelated").Preload("ImageRelated.Image").First(&categoryModel, id).Error; err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (c *CategoryRepositoryImpl) FindByID(ctx context.Context, id uint) (*entity
 
 // FindAll returns all categories with optional images
 func (c *CategoryRepositoryImpl) FindAll(ctx context.Context) ([]*entity.Category, error) {
-	var categoryModels []model.Category
+	var categoryModels []model.CategoryModel
 	if err := c.db.WithContext(ctx).Preload("ImageRelated").Preload("ImageRelated.Image").Find(&categoryModels).Error; err != nil {
 		return nil, err
 	}
@@ -72,5 +72,5 @@ func (c *CategoryRepositoryImpl) Update(ctx context.Context, category *entity.Ca
 
 // Delete removes a category by ID
 func (c *CategoryRepositoryImpl) Delete(ctx context.Context, id uint) error {
-	return c.db.WithContext(ctx).Delete(&model.Category{}, id).Error
+	return c.db.WithContext(ctx).Delete(&model.CategoryModel{}, id).Error
 }
