@@ -31,7 +31,7 @@ func (s *ImageService) SaveImageByURL(ctx context.Context, url string) (*entity.
 
 func (s *ImageService) UploadImage(ctx context.Context, fileHeader *multipart.FileHeader) (*entity.Image, error) {
 	// Validate file size (e.g., max 5MB)
-	const maxFileSize = 5 << 20 // 5MB
+	const maxFileSize = 20 << 20 // 20MB
 	if fileHeader.Size > maxFileSize {
 		return nil, NewUnsupportedMediaTypeError(fmt.Sprintf("file size exceeds the limit of %d bytes", maxFileSize))
 	}
