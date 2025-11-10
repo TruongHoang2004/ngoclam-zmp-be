@@ -5,10 +5,7 @@ APP_FILE=bin/ngoclam-zmp-be
 
 
 # Lệnh generate swagger docs
-swag:
-	swag init -g $(MAIN_FILE) -o docs
-
-dev: swag
+dev: 
 	go run -mod=mod -tags=dev $(MAIN_FILE)
 
 # Build binary

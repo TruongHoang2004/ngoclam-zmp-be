@@ -14,7 +14,7 @@ env "gorm" {
   # Database dev (chỉ dùng để Atlas diff, không phải DB production)
   dev = "postgres://postgres:truonghoang2004@localhost:5432/empty?sslmode=disable"
 
-  url = "postgres://postgres:truonghoang2004@localhost:5432/ngoclam?sslmode=disable"
+  url = "postgres://postgres:truonghoang2004@localhost:5432/zmp?sslmode=disable"
 
   migration {
     dir = "file://internal/infrastructure/database/migrations"
