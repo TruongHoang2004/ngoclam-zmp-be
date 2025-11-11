@@ -5,19 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 )
 
 var ServerModule = fx.Module("http",
-	fx.Provide(func() *gin.Engine {
-		r := gin.Default()
-
-		r.Use(cors.Default())
-
-		return r
-	}),
 	fx.Provide(func(r *gin.Engine) *http.Server {
 		return &http.Server{
 			Addr:    ":8080",

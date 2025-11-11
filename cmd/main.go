@@ -10,11 +10,12 @@ import (
 
 func main() {
 	app := fx.New(
-		fx.NopLogger, // Disable Fx's own logging
+		// fx.NopLogger, // Disable Fx's own logging
 		module.ConfigModule(),
 		module.DatabaseModule,
 		module.ServerModule,
 		module.RouterModule,
+		module.ImageModule,
 
 		// Hook cho log start/stop toàn app
 		fx.Invoke(func(lc fx.Lifecycle) {
