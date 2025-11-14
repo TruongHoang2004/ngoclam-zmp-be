@@ -4,9 +4,9 @@ import "time"
 
 type Product struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
-	Name        *string   `gorm:"type:varchar(255)" json:"name,omitempty"`
+	Name        string    `gorm:"type:varchar(255)" json:"name"`
 	Description *string   `gorm:"type:text" json:"description,omitempty"`
-	Price       *float64  `gorm:"type:decimal(10,2)" json:"price,omitempty"`
+	Price       int64     `gorm:"type:bigint" json:"price,omitempty"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

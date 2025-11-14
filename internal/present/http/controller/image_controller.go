@@ -140,5 +140,5 @@ func (c *ImageController) DeleteImage(ctx *gin.Context) {
 		ctx.Error(common.BadRequest("Invalid ID format", err))
 		return
 	}
-	c.imageService.DeleteImage(ctx.Request.Context(), 0)
+	c.imageService.DeleteImage(ctx.Request.Context(), idUint)
 }
