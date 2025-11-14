@@ -9,21 +9,21 @@ const (
 )
 
 type PaginationRequest struct {
-	Page     int    `json:"page" form:"page" query:"page"`
-	PageSize int    `json:"page_size" form:"page_size" query:"page_size"`
-	SortBy   string `json:"sort_by" form:"sort_by" query:"sort_by"`
-	Order    string `json:"order" form:"order" query:"order"` // "asc" or "desc"
+	Page   int    `json:"page" form:"page" query:"page"`
+	Size   int    `json:"size" form:"size" query:"size"`
+	SortBy string `json:"sort_by" form:"sort_by" query:"sort_by"`
+	Order  string `json:"order" form:"order" query:"order"` // "asc" or "desc"
 }
 
 func (p *PaginationRequest) Normalize() {
 	if p.Page < 1 {
 		p.Page = DefaultPage
 	}
-	if p.PageSize <= 0 {
-		p.PageSize = DefaultPageSize
+	if p.Size <= 0 {
+		p.Size = DefaultPageSize
 	}
-	if p.PageSize > MaxPageSize {
-		p.PageSize = MaxPageSize
+	if p.Size > MaxPageSize {
+		p.Size = MaxPageSize
 	}
 	p.Order = strings.ToLower(strings.TrimSpace(p.Order))
 	if p.Order != "asc" && p.Order != "desc" {
@@ -35,14 +35,14 @@ func (p PaginationRequest) Offset() int {
 	if p.Page < 1 {
 		return 0
 	}
-	return (p.Page - 1) * p.PageSize
+	return (p.Page - 1) * p.Size
 }
 
 func (p PaginationRequest) Limit() int {
-	if p.PageSize <= 0 {
+	if p.Size <= 0 {
 		return DefaultPageSize
 	}
-	return p.PageSize
+	return p.Size
 }
 
 type PaginationResponse[T any] struct {
@@ -57,13 +57,13 @@ func NewPaginationResponse[T any](items []T, total int64, req PaginationRequest)
 	req.Normalize()
 	var totalPages int
 	if total > 0 {
-		totalPages = int((total + int64(req.PageSize) - 1) / int64(req.PageSize))
+		totalPages = int((total + int64(req.Size) - 1) / int64(req.Size))
 	}
 	return PaginationResponse[T]{
 		Data:       items,
 		Total:      total,
 		Page:       req.Page,
-		PageSize:   req.PageSize,
+		PageSize:   req.Size,
 		TotalPages: totalPages,
 	}
 }

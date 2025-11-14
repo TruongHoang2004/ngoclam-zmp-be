@@ -15,6 +15,7 @@ func main() {
 		module.DatabaseModule,
 		module.ServerModule,
 		module.RouterModule,
+		module.ProductModule,
 		module.ImageModule,
 
 		// Hook cho log start/stop toàn app

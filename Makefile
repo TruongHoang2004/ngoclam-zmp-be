@@ -44,3 +44,6 @@ migrate-apply:
 # Show migration status
 migrate-status:
 	atlas migrate status --env gorm
+
+migrate-hash:
+	atlas migrate hash --env gorm

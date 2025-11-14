@@ -37,10 +37,14 @@ func (r *ProductRepository) DeleteProduct(ctx context.Context, id uint) error {
 	return r.db.Delete(&model.Product{}, id).Error
 }
 
-func (r *ProductRepository) ListProducts(ctx context.Context, offset int, limit int) ([]*model.Product, error) {
+func (r *ProductRepository) ListProducts(ctx context.Context, offset int, limit int) ([]*model.Product, int64, error) {
+	query := r.db.Model(&model.Product{})
 	var products []*model.Product
-	if err := r.db.Offset(offset).Limit(limit).Find(&products).Error; err != nil {
-		return nil, err
+	if err := query.Offset(offset).Limit(limit).Find(&products).Error; err != nil {
+		return nil, 0, err
 	}
-	return products, nil
+
+	var total int64
+	query.Count(&total)
+	return products, total, nil
 }

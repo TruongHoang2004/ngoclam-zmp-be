@@ -8,6 +8,12 @@ type CreateProductRequest struct {
 	Price       int64  `json:"price"`
 }
 
+type UpdateProductRequest struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Price       *int64  `json:"price,omitempty"`
+}
+
 type ProductResponse struct {
 	ID          uint   `json:"id"`
 	Name        string `json:"name"`
