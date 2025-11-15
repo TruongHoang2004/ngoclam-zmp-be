@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
@@ -20,6 +21,19 @@ func NewProductService(productRepo *repository.ProductRepository) *ProductServic
 }
 
 func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateProductRequest) error {
+
+	varNameSet := make(map[string]struct{})
+	for _, v := range product.Variants {
+		name := v.Name
+		if name == "" {
+			continue // optional: skip empty names
+		}
+		if _, exists := varNameSet[name]; exists {
+			return common.BadRequest(fmt.Sprintf("Duplicate variant name: %s", name))
+		}
+		varNameSet[name] = struct{}{}
+	}
+
 	modelProduct := &model.Product{
 		Name:        product.Name,
 		Description: &product.Description,
@@ -30,15 +44,27 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateP
 	if err != nil {
 		return err
 	}
+
 	if existed {
 		return common.Conflict("Product already exists")
+	}
+
+	if modelProduct.Variants == nil {
+		modelProduct.Variants = []model.ProductVariant{}
+		for _, v := range product.Variants {
+			modelProduct.Variants = append(modelProduct.Variants, model.ProductVariant{
+				Name:  v.Name,
+				Price: v.Price,
+				Stock: v.Stock,
+			})
+		}
 	}
 
 	return s.productRepository.CreateProduct(ctx, modelProduct)
 }
 
 func (s *ProductService) GetProductByID(ctx context.Context, id uint) (*model.Product, []model.ProductVariant, error) {
-	product, err := s.productRepository.GetProductByID(ctx, id)
+	product, err := s.productRepository.GetProductDetailByID(ctx, id, true)
 	if err != nil {
 		return nil, nil, common.NotFound("Product not found")
 	}
@@ -57,7 +83,7 @@ func (s *ProductService) ListProducts(ctx context.Context, page int, size int) (
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateProductRequest) error {
-	productModel, err := s.productRepository.GetProductByID(ctx, product.ID)
+	productModel, err := s.productRepository.GetProductDetailByID(ctx, product.ID, false)
 	if err != nil {
 		return common.NotFound("Product not found")
 	}
@@ -76,7 +102,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateP
 }
 
 func (s *ProductService) DeleteProduct(ctx context.Context, id uint) error {
-	productModel, err := s.productRepository.GetProductByID(ctx, id)
+	productModel, err := s.productRepository.GetProductDetailByID(ctx, id, false)
 	if err != nil {
 		return common.NotFound("Product not found")
 	}
@@ -85,7 +111,7 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id uint) error {
 }
 
 func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.AddProductVariantRequest) error {
-	product, err := s.productRepository.GetProductByID(ctx, variant.ProductID)
+	product, err := s.productRepository.GetProductDetailByID(ctx, variant.ProductID, false)
 	if product == nil {
 		return common.NotFound("Product not found")
 	}
@@ -109,4 +135,36 @@ func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.Add
 	}
 
 	return s.productRepository.AddProductVariant(ctx, variantModel)
+}
+
+func (s *ProductService) UpdateProductVariant(ctx context.Context, variant *dto.UpdateProductVariantRequest) error {
+
+	variantModel, err := s.productRepository.GetProductVariantByID(ctx, variant.ID)
+	if err != nil {
+		return err
+	}
+	if variantModel == nil {
+		return common.NotFound("Product variant not found")
+	}
+
+	if variant.Name != nil {
+		variantModel.Name = *variant.Name
+	}
+	if variant.Price != nil {
+		variantModel.Price = *variant.Price
+	}
+	if variant.Stock != nil {
+		variantModel.Stock = *variant.Stock
+	}
+
+	return s.productRepository.UpdateProductVariant(ctx, variant.ID, variantModel)
+}
+
+func (s *ProductService) DeleteProductVariant(ctx context.Context, id uint) error {
+	variantModel, err := s.productRepository.GetProductVariantByID(ctx, id)
+	if variantModel == nil || err != nil {
+		return common.NotFound("Product variant not found")
+	}
+
+	return s.productRepository.DeleteProductVariant(ctx, variantModel.ID)
 }

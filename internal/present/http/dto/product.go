@@ -3,12 +3,12 @@ package dto
 import "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 
 type CreateProductVariantRequest struct {
-	Name  string `json:"name"`
-	Price int64  `json:"price"`
+	Name  string `json:"name" binding:"required,min=1,max=255"`
+	Price int64  `json:"price" binding:"required,gt=0"`
 	Stock int64  `json:"stock"`
 }
 
-type UpdateVariantRequest struct {
+type UpdateProductVariantRequest struct {
 	ID    uint    `json:"id,omitempty"`
 	Name  *string `json:"name,omitempty"`
 	Price *int64  `json:"price,omitempty"`
@@ -27,7 +27,7 @@ type ProductVariantResponse struct {
 	ProductID uint   `json:"product_id"`
 	Name      string `json:"name"`
 	Price     int64  `json:"price"`
-	Stock     int64  `json:"stock"`
+	// Stock     int64  `json:"stock"`
 }
 
 func NewProductVariantResponse(model *model.ProductVariant) *ProductVariantResponse {
@@ -36,15 +36,15 @@ func NewProductVariantResponse(model *model.ProductVariant) *ProductVariantRespo
 		ProductID: model.ProductID,
 		Name:      model.Name,
 		Price:     model.Price,
-		Stock:     model.Stock,
+		// Stock:     model.Stock,
 	}
 }
 
 type CreateProductRequest struct {
-	Name        string                   `json:"name" binding:"required,min=1,max=255"`
-	Description string                   `json:"description"`
-	Price       int64                    `json:"price" binding:"required,gt=0"`
-	Variants    []ProductVariantResponse `json:"variants,omitempty"`
+	Name        string                        `json:"name" binding:"required,min=1,max=255"`
+	Description string                        `json:"description"`
+	Price       int64                         `json:"price" binding:"required,gt=0"`
+	Variants    []CreateProductVariantRequest `json:"variants,omitempty"`
 }
 
 type UpdateProductRequest struct {
@@ -62,15 +62,15 @@ type ProductResponse struct {
 	Variants    []ProductVariantResponse `json:"variants,omitempty"`
 }
 
-func NewProductResponse(model *model.Product, variants ...model.ProductVariant) *ProductResponse {
+func NewProductResponse(model *model.Product) *ProductResponse {
 	var desc string
 	if model.Description != nil {
 		desc = *model.Description
 	}
 
 	var variant []ProductVariantResponse
-	if len(variants) > 0 {
-		for _, v := range variants {
+	if len(model.Variants) > 0 {
+		for _, v := range model.Variants {
 			variant = append(variant, *NewProductVariantResponse(&v))
 		}
 	}

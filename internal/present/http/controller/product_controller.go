@@ -25,6 +25,7 @@ func (pc *ProductController) RegisterRoutes(r *gin.RouterGroup) {
 		products.GET("", pc.GetAllProduct)
 		products.PUT("", pc.UpdateProduct)
 		products.DELETE("/:id", pc.DeleteProduct)
+
 		products.POST("/variants", pc.AddProductVariant)
 		products.PUT("/variants", pc.UpdateProductVariant)
 		products.DELETE("/variants/:id", pc.DeleteProductVariant)
@@ -52,12 +53,12 @@ func (pc *ProductController) GetProductByID(ctx *gin.Context) {
 		return
 	}
 
-	product, variants, err := pc.productService.GetProductByID(ctx.Request.Context(), id)
+	product, _, err := pc.productService.GetProductByID(ctx.Request.Context(), id)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
-	ctx.JSON(200, dto.NewProductResponse(product, variants...))
+	ctx.JSON(200, dto.NewProductResponse(product))
 }
 
 func (pc *ProductController) GetAllProduct(ctx *gin.Context) {
@@ -125,9 +126,29 @@ func (pc *ProductController) AddProductVariant(ctx *gin.Context) {
 }
 
 func (pc *ProductController) UpdateProductVariant(ctx *gin.Context) {
-	// Implementation for updating a product variant
+	payload := dto.UpdateProductVariantRequest{}
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.Error(common.BadRequest("Invalid request body", err))
+		return
+	}
+
+	if err := pc.productService.UpdateProductVariant(ctx.Request.Context(), &payload); err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(200, gin.H{"message": "Product variant updated successfully"})
 }
 
 func (pc *ProductController) DeleteProductVariant(ctx *gin.Context) {
-	// Implementation for deleting a product variant
+	id, err := common.ParseUintParam(ctx, "id")
+	if err != nil {
+		ctx.Error(common.BadRequest("Invalid ID format", err))
+		return
+	}
+
+	if err := pc.productService.DeleteProductVariant(ctx.Request.Context(), id); err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(200, gin.H{"message": "Product variant deleted successfully"})
 }
