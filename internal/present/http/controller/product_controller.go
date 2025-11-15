@@ -23,8 +23,11 @@ func (pc *ProductController) RegisterRoutes(r *gin.RouterGroup) {
 		products.POST("", pc.CreateProduct)
 		products.GET("/:id", pc.GetProductByID)
 		products.GET("", pc.GetAllProduct)
-		products.PUT("/:id", pc.UpdateProduct)
+		products.PUT("", pc.UpdateProduct)
 		products.DELETE("/:id", pc.DeleteProduct)
+		products.POST("/variants", pc.AddProductVariant)
+		products.PUT("/variants", pc.UpdateProductVariant)
+		products.DELETE("/variants/:id", pc.DeleteProductVariant)
 	}
 }
 
@@ -49,12 +52,12 @@ func (pc *ProductController) GetProductByID(ctx *gin.Context) {
 		return
 	}
 
-	product, err := pc.productService.GetProductByID(ctx.Request.Context(), id)
+	product, variants, err := pc.productService.GetProductByID(ctx.Request.Context(), id)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
-	ctx.JSON(200, dto.NewProductResponse(product))
+	ctx.JSON(200, dto.NewProductResponse(product, variants...))
 }
 
 func (pc *ProductController) GetAllProduct(ctx *gin.Context) {
@@ -86,13 +89,7 @@ func (pc *ProductController) UpdateProduct(ctx *gin.Context) {
 		return
 	}
 
-	id, err := common.ParseUintParam(ctx, "id")
-	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
-		return
-	}
-
-	if err := pc.productService.UpdateProduct(ctx.Request.Context(), id, &payload); err != nil {
+	if err := pc.productService.UpdateProduct(ctx.Request.Context(), &payload); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -100,5 +97,37 @@ func (pc *ProductController) UpdateProduct(ctx *gin.Context) {
 }
 
 func (pc *ProductController) DeleteProduct(ctx *gin.Context) {
+	id, err := common.ParseUintParam(ctx, "id")
+	if err != nil {
+		ctx.Error(common.BadRequest("Invalid ID format", err))
+		return
+	}
 
+	if err := pc.productService.DeleteProduct(ctx.Request.Context(), id); err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(200, gin.H{"message": "Product deleted successfully"})
+}
+
+func (pc *ProductController) AddProductVariant(ctx *gin.Context) {
+	payload := dto.AddProductVariantRequest{}
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.Error(common.BadRequest("Invalid request body", err))
+		return
+	}
+
+	if err := pc.productService.AddProductVariant(ctx.Request.Context(), &payload); err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(201, gin.H{"message": "Product variant added successfully"})
+}
+
+func (pc *ProductController) UpdateProductVariant(ctx *gin.Context) {
+	// Implementation for updating a product variant
+}
+
+func (pc *ProductController) DeleteProductVariant(ctx *gin.Context) {
+	// Implementation for deleting a product variant
 }

@@ -1,2 +1,5 @@
-h1:5xZclBgwAHp8ELBmXA+xVigQIoo7ObSZhLa/uaN6C+k=
+h1:HXnz8VueYSDAy1nbtuf7xNYbX9cje8VtLBb6wD1rCs0=
 20251114195413_init.sql h1:yX33DR6IBLNm50G2OyGj/s6ghwOOSXz5C40YEs6hC6E=
+20251115075926_product_variant.sql h1:LdXmNhuZz5Mkc0NyWhAEGKmJV4GKRcIVpE6JhuSYiRc=
+20251115083155_add_product_variant_display_name.sql h1:zuSzM4NxJtgerovOVqgaMFtEhc5teoEX9ut1rVTdDSs=
+20251115085002_product_name_unique.sql h1:rKNbwkCsszoyCy3DdwYSNAW6WXz31SpHgcU3bJvpMLc=
