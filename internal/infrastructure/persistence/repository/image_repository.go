@@ -1,82 +1,91 @@
 package repository
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"io"
-	"mime/multipart"
-	"net/http"
 
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/sdk/imagekit"
 	"gorm.io/gorm"
 )
 
 type ImageRepository struct {
-	db          *gorm.DB
-	imageKitURL string
-	publicKey   string
-	privateKey  string
-	folder      string
+	db             *gorm.DB
+	imageKitClient *imagekit.ImageKitClient
+	folder         string
 }
 
-func NewImageRepository(db *gorm.DB, config *config.Config) *ImageRepository {
+func NewImageRepository(db *gorm.DB, imageKitClient *imagekit.ImageKitClient) *ImageRepository {
 	return &ImageRepository{
-		db:          db,
-		publicKey:   config.ImageKitPublicKey,
-		privateKey:  config.ImageKitPrivateKey,
-		folder:      "NgocLamZMP",
-		imageKitURL: config.ImageKitEndpoint,
+		db:             db,
+		imageKitClient: imageKitClient,
+		folder:         "NgocLamZMP",
 	}
 }
 
-// Create (Upload) image
+// UploadImage uploads an image from byte data
 func (r *ImageRepository) UploadImage(ctx context.Context, fileName string, fileData []byte) (*model.Image, error) {
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	// Encode file to base64
-	b64 := base64.StdEncoding.EncodeToString(fileData)
-
-	_ = writer.WriteField("file", "data:image/jpeg;base64,"+b64)
-	_ = writer.WriteField("fileName", fileName)
-	if r.folder != "" {
-		_ = writer.WriteField("folder", r.folder)
+	opts := &imagekit.UploadOptions{
+		Folder:            r.folder,
+		UseUniqueFileName: true,
 	}
-	writer.Close()
 
-	req, err := http.NewRequestWithContext(ctx, "POST", r.imageKitURL, body)
+	result, err := r.imageKitClient.UploadImageFromBytes(ctx, fileData, fileName, opts)
 	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(r.publicKey, r.privateKey)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if res.StatusCode >= 300 {
-		data, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("upload failed: %s", string(data))
-	}
-
-	var resp struct {
-		URL    string `json:"url"`
-		FileID string `json:"fileId"`
-	}
-	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
 		return nil, err
 	}
 
 	img := &model.Image{
-		URL:  resp.URL,
-		Hash: resp.FileID,
+		URL:  result.Url,
+		Hash: result.FileId,
+	}
+
+	if err := r.db.WithContext(ctx).Create(img).Error; err != nil {
+		return nil, err
+	}
+
+	return img, nil
+}
+
+// UploadImageFromReader uploads an image from io.Reader
+func (r *ImageRepository) UploadImageFromReader(ctx context.Context, file io.Reader, fileName string) (*model.Image, error) {
+	opts := &imagekit.UploadOptions{
+		Folder:            r.folder,
+		UseUniqueFileName: true,
+	}
+
+	result, err := r.imageKitClient.UploadImage(ctx, file, fileName, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	img := &model.Image{
+		URL:  result.Url,
+		Hash: result.FileId,
+	}
+
+	if err := r.db.WithContext(ctx).Create(img).Error; err != nil {
+		return nil, err
+	}
+
+	return img, nil
+}
+
+// UploadImageFromURL uploads an image from a URL
+func (r *ImageRepository) UploadImageFromURL(ctx context.Context, url string, fileName string) (*model.Image, error) {
+	opts := &imagekit.UploadOptions{
+		Folder:            r.folder,
+		UseUniqueFileName: true,
+	}
+
+	result, err := r.imageKitClient.UploadFromURL(ctx, url, fileName, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	img := &model.Image{
+		URL:  result.Url,
+		Hash: result.FileId,
 	}
 
 	if err := r.db.WithContext(ctx).Create(img).Error; err != nil {
@@ -105,7 +114,7 @@ func (r *ImageRepository) GetAllImages(ctx context.Context, page int, limit int)
 	return images, nil
 }
 
-// Update (replace image)
+// Update (replace image) updates an image from byte data
 func (r *ImageRepository) UpdateImage(ctx context.Context, id uint, fileName string, fileData []byte) (*model.Image, error) {
 	img, err := r.GetImageByID(ctx, id)
 	if err != nil {
@@ -114,31 +123,57 @@ func (r *ImageRepository) UpdateImage(ctx context.Context, id uint, fileName str
 
 	// Delete old image from ImageKit
 	if img.Hash != "" {
-		delURL := fmt.Sprintf("https://api.imagekit.io/v1/files/%s", img.Hash)
-		req, _ := http.NewRequestWithContext(ctx, "DELETE", delURL, nil)
-		req.SetBasicAuth(r.publicKey, r.privateKey)
-		client := &http.Client{}
-		_, _ = client.Do(req)
+		_ = r.imageKitClient.DeleteFile(ctx, img.Hash)
 	}
 
 	// Upload new image
 	return r.UploadImage(ctx, fileName, fileData)
 }
 
-// Delete
+// UpdateImageFromReader updates an image from io.Reader
+func (r *ImageRepository) UpdateImageFromReader(ctx context.Context, id uint, file io.Reader, fileName string) (*model.Image, error) {
+	img, err := r.GetImageByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Delete old image from ImageKit
+	if img.Hash != "" {
+		_ = r.imageKitClient.DeleteFile(ctx, img.Hash)
+	}
+
+	// Upload new image
+	return r.UploadImageFromReader(ctx, file, fileName)
+}
+
+// UpdateImageFromURL updates an image from a URL
+func (r *ImageRepository) UpdateImageFromURL(ctx context.Context, id uint, url string, fileName string) (*model.Image, error) {
+	img, err := r.GetImageByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Delete old image from ImageKit
+	if img.Hash != "" {
+		_ = r.imageKitClient.DeleteFile(ctx, img.Hash)
+	}
+
+	// Upload new image
+	return r.UploadImageFromURL(ctx, url, fileName)
+}
+
+// Delete deletes an image from database and ImageKit
 func (r *ImageRepository) DeleteImage(ctx context.Context, id uint) error {
 	img, err := r.GetImageByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
+	// Delete from ImageKit
 	if img.Hash != "" {
-		delURL := fmt.Sprintf("https://api.imagekit.io/v1/files/%s", img.Hash)
-		req, _ := http.NewRequestWithContext(ctx, "DELETE", delURL, nil)
-		req.SetBasicAuth(r.publicKey, r.privateKey)
-		client := &http.Client{}
-		_, _ = client.Do(req)
+		_ = r.imageKitClient.DeleteFile(ctx, img.Hash)
 	}
 
+	// Delete from database
 	return r.db.WithContext(ctx).Delete(&model.Image{}, id).Error
 }
