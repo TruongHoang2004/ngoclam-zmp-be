@@ -44,10 +44,10 @@ func (s *ImageService) GetImageByID(ctx context.Context, id uint) (*model.Image,
 	return image, err
 }
 
-func (s *ImageService) GetAllImages(ctx context.Context, page int, limit int) ([]*model.Image, error) {
-	list, err := s.imageRepository.GetAllImages(ctx, page, limit)
+func (s *ImageService) GetAllImages(ctx context.Context, page int, limit int) ([]*model.Image, int64, error) {
+	list, total, err := s.imageRepository.GetAllImages(ctx, page, limit)
 
-	return list, err
+	return list, total, err
 }
 
 // UpdateImage updates an image from byte data

@@ -104,14 +104,20 @@ func (r *ImageRepository) GetImageByID(ctx context.Context, id uint) (*model.Ima
 	return &img, nil
 }
 
-func (r *ImageRepository) GetAllImages(ctx context.Context, page int, limit int) ([]*model.Image, error) {
+func (r *ImageRepository) GetAllImages(ctx context.Context, page int, limit int) ([]*model.Image, int64, error) {
 	var images []*model.Image
-	offset := page * limit
-	if err := r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&images).Error; err != nil {
-		return nil, err
+	offset := (page - 1) * limit
+
+	var total int64
+	if err := r.db.WithContext(ctx).Model(&model.Image{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return images, nil
+	if err := r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&images).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return images, total, nil
 }
 
 // Update (replace image) updates an image from byte data

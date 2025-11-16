@@ -23,10 +23,10 @@ func NewImageController(imageService *service.ImageService) *ImageController {
 func (c *ImageController) RegisterRoutes(r *gin.RouterGroup) {
 	images := r.Group("/images")
 	{
-		images.POST("/", c.UploadImage)
+		images.POST("", c.UploadImage)
 		images.POST("/url", c.UploadImageFromURL)
 		images.GET("/:id", c.GetImageByID)
-		images.GET("/", c.GetAllImages)
+		images.GET("", c.GetAllImages)
 		images.PUT("/:id", c.UpdateImage)
 		images.PUT("/:id/url", c.UpdateImageFromURL)
 		images.DELETE("/:id", c.DeleteImage)
@@ -36,7 +36,7 @@ func (c *ImageController) RegisterRoutes(r *gin.RouterGroup) {
 func (c *ImageController) UploadImage(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid input"))
+		ctx.Error(common.BadRequest("File is required", err))
 		return
 	}
 
@@ -101,22 +101,14 @@ func (c *ImageController) GetImageByID(ctx *gin.Context) {
 }
 
 func (c *ImageController) GetAllImages(ctx *gin.Context) {
-	page := ctx.DefaultQuery("page", "0")
-	limit := ctx.DefaultQuery("limit", "10")
-
-	var pageInt, limitInt int
-	_, err := fmt.Sscanf(page, "%d", &pageInt)
-	if err != nil {
-		ctx.Error(common.BadRequest("Invalid page format", err))
+	var req dto.PaginationRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.Error(common.BadRequest("Invalid pagination query", err))
 		return
 	}
-	_, err = fmt.Sscanf(limit, "%d", &limitInt)
-	if err != nil {
-		ctx.Error(common.BadRequest("Invalid limit format", err))
-		return
-	}
+	req.Normalize()
 
-	images, err := c.imageService.GetAllImages(ctx.Request.Context(), pageInt, limitInt)
+	images, total, err := c.imageService.GetAllImages(ctx.Request.Context(), req.Page, req.Size)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -127,10 +119,8 @@ func (c *ImageController) GetAllImages(ctx *gin.Context) {
 		imageResponses = append(imageResponses, *dto.NewImageResponse(img))
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"images": imageResponses,
-	})
-	// return
+	pag := dto.NewPaginationResponse(imageResponses, total, req)
+	ctx.JSON(http.StatusOK, pag)
 
 }
 
