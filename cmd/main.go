@@ -17,6 +17,7 @@ func main() {
 		module.RouterModule,
 		module.ProductModule,
 		module.ImageModule,
+		module.FolderModule,
 
 		// Hook cho log start/stop toàn app
 		fx.Invoke(func(lc fx.Lifecycle) {
