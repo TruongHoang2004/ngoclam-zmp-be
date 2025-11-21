@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repository"
 )
 
@@ -20,49 +20,54 @@ func NewImageService(imageRepo *repository.ImageRepository) *ImageService {
 }
 
 // UploadImage uploads an image from byte data
-func (s *ImageService) UploadImage(ctx context.Context, fileName string, fileData []byte) (*model.Image, error) {
+func (s *ImageService) UploadImage(ctx context.Context, fileName string, fileData []byte) (*domain.Image, error) {
 	return s.imageRepository.UploadImage(ctx, fileName, fileData)
 }
 
 // UploadImageFromReader uploads an image from io.Reader
-func (s *ImageService) UploadImageFromReader(ctx context.Context, file io.Reader, fileName string) (*model.Image, error) {
+func (s *ImageService) UploadImageFromReader(ctx context.Context, file io.Reader, fileName string) (*domain.Image, error) {
 	return s.imageRepository.UploadImageFromReader(ctx, file, fileName)
 }
 
 // UploadImageFromURL uploads an image from a URL
-func (s *ImageService) UploadImageFromURL(ctx context.Context, url string, fileName string) (*model.Image, error) {
+func (s *ImageService) UploadImageFromURL(ctx context.Context, url string, fileName string) (*domain.Image, error) {
 	return s.imageRepository.UploadImageFromURL(ctx, url, fileName)
 }
 
-func (s *ImageService) GetImageByID(ctx context.Context, id uint) (*model.Image, error) {
+func (s *ImageService) GetImageByID(ctx context.Context, id uint) (*domain.Image, error) {
 	image, err := s.imageRepository.GetImageByID(ctx, id)
 
 	if image == nil {
 		return nil, common.NotFound("Image id not found")
 	}
 
-	return image, err
+	return domain.NewImageDomain(image), err
 }
 
-func (s *ImageService) GetAllImages(ctx context.Context, page int, limit int) ([]*model.Image, int64, error) {
+func (s *ImageService) GetAllImages(ctx context.Context, page int, limit int) ([]*domain.Image, int64, error) {
 	list, total, err := s.imageRepository.GetAllImages(ctx, page, limit)
 
-	return list, total, err
+	domainList := make([]*domain.Image, 0, len(list))
+	for _, img := range list {
+		domainList = append(domainList, domain.NewImageDomain(img))
+	}
+
+	return domainList, total, err
 }
 
 // UpdateImage updates an image from byte data
-func (s *ImageService) UpdateImage(ctx context.Context, id uint, fileName string, fileData []byte) (*model.Image, error) {
+func (s *ImageService) UpdateImage(ctx context.Context, id uint, fileName string, fileData []byte) (*domain.Image, error) {
 	image, err := s.imageRepository.UpdateImage(ctx, id, fileName, fileData)
 	return image, err
 }
 
 // UpdateImageFromReader updates an image from io.Reader
-func (s *ImageService) UpdateImageFromReader(ctx context.Context, id uint, file io.Reader, fileName string) (*model.Image, error) {
+func (s *ImageService) UpdateImageFromReader(ctx context.Context, id uint, file io.Reader, fileName string) (*domain.Image, error) {
 	return s.imageRepository.UpdateImageFromReader(ctx, id, file, fileName)
 }
 
 // UpdateImageFromURL updates an image from a URL
-func (s *ImageService) UpdateImageFromURL(ctx context.Context, id uint, url string, fileName string) (*model.Image, error) {
+func (s *ImageService) UpdateImageFromURL(ctx context.Context, id uint, url string, fileName string) (*domain.Image, error) {
 	return s.imageRepository.UpdateImageFromURL(ctx, id, url, fileName)
 }
 

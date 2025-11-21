@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repository"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 )
@@ -34,13 +34,9 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateP
 		varNameSet[name] = struct{}{}
 	}
 
-	modelProduct := &model.Product{
-		Name:        product.Name,
-		Description: &product.Description,
-		Price:       product.Price,
-	}
+	domainProduct := product.ToDomain()
 
-	existed, err := s.productRepository.IsExistProduct(ctx, modelProduct)
+	existed, err := s.productRepository.IsExistProduct(ctx, domainProduct.Name)
 	if err != nil {
 		return err
 	}
@@ -49,65 +45,61 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateP
 		return common.Conflict("Product already exists")
 	}
 
-	if modelProduct.Variants == nil {
-		modelProduct.Variants = []model.ProductVariant{}
+	if domainProduct.Variants == nil {
+		dv := make([]domain.ProductVariant, 0, len(product.Variants))
 		for _, v := range product.Variants {
-			modelProduct.Variants = append(modelProduct.Variants, model.ProductVariant{
+			dv = append(dv, domain.ProductVariant{
 				Name:  v.Name,
 				Price: v.Price,
 				Stock: v.Stock,
 			})
 		}
+		domainProduct.Variants = &dv
 	}
 
-	return s.productRepository.CreateProduct(ctx, modelProduct)
+	return s.productRepository.CreateProduct(ctx, domainProduct)
 }
 
-func (s *ProductService) GetProductByID(ctx context.Context, id uint) (*model.Product, []model.ProductVariant, error) {
+func (s *ProductService) GetProductByID(ctx context.Context, id uint) (*domain.Product, error) {
 	product, err := s.productRepository.GetProductDetailByID(ctx, id, true)
 	if err != nil {
-		return nil, nil, common.NotFound("Product not found")
+		return nil, common.NotFound("Product not found")
 	}
 
-	variants, err := s.productRepository.GetAllProductVariantsByProductID(ctx, product.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return product, variants, nil
+	return product, nil
 }
 
-func (s *ProductService) ListProducts(ctx context.Context, page int, size int) ([]*model.Product, int64, error) {
+func (s *ProductService) ListProducts(ctx context.Context, page int, size int) ([]*domain.Product, int64, error) {
 	offset := (page - 1) * size
 	return s.productRepository.ListProducts(ctx, offset, size)
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateProductRequest) error {
-	productModel, err := s.productRepository.GetProductDetailByID(ctx, product.ID, false)
+	productdomain, err := s.productRepository.GetProductDetailByID(ctx, product.ID, false)
 	if err != nil {
 		return common.NotFound("Product not found")
 	}
 
 	if product.Name != nil {
-		productModel.Name = *product.Name
+		productdomain.Name = *product.Name
 	}
 	if product.Description != nil {
-		productModel.Description = product.Description
+		productdomain.Description = product.Description
 	}
 	if product.Price != nil {
-		productModel.Price = *product.Price
+		productdomain.Price = *product.Price
 	}
 
-	return s.productRepository.UpdateProduct(ctx, productModel)
+	return s.productRepository.UpdateProduct(ctx, productdomain)
 }
 
 func (s *ProductService) DeleteProduct(ctx context.Context, id uint) error {
-	productModel, err := s.productRepository.GetProductDetailByID(ctx, id, false)
+	productdomain, err := s.productRepository.GetProductDetailByID(ctx, id, false)
 	if err != nil {
 		return common.NotFound("Product not found")
 	}
 
-	return s.productRepository.DeleteProduct(ctx, productModel.ID)
+	return s.productRepository.DeleteProduct(ctx, productdomain.ID)
 }
 
 func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.AddProductVariantRequest) error {
@@ -119,14 +111,14 @@ func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.Add
 		return err
 	}
 
-	variantModel := &model.ProductVariant{
+	variantdomain := &domain.ProductVariant{
 		ProductID: variant.ProductID,
 		Name:      variant.Name,
 		Price:     variant.Price,
 		Stock:     variant.Stock,
 	}
 
-	existed, err := s.productRepository.IsExistProductvariants(ctx, variant.ProductID, variantModel)
+	existed, err := s.productRepository.IsExistProductVariant(ctx, variant.ProductID, variantdomain.Name)
 	if err != nil {
 		return err
 	}
@@ -134,37 +126,34 @@ func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.Add
 		return common.Conflict("Product variant already exists")
 	}
 
-	return s.productRepository.AddProductVariant(ctx, variantModel)
+	return s.productRepository.AddProductVariant(ctx, variantdomain)
 }
 
 func (s *ProductService) UpdateProductVariant(ctx context.Context, variant *dto.UpdateProductVariantRequest) error {
 
-	variantModel, err := s.productRepository.GetProductVariantByID(ctx, variant.ID)
-	if err != nil {
-		return err
-	}
-	if variantModel == nil {
+	variantdomain := s.productRepository.GetProductVariantByID(ctx, variant.ID)
+	if variantdomain == nil {
 		return common.NotFound("Product variant not found")
 	}
 
 	if variant.Name != nil {
-		variantModel.Name = *variant.Name
+		variantdomain.Name = *variant.Name
 	}
 	if variant.Price != nil {
-		variantModel.Price = *variant.Price
+		variantdomain.Price = *variant.Price
 	}
 	if variant.Stock != nil {
-		variantModel.Stock = *variant.Stock
+		variantdomain.Stock = *variant.Stock
 	}
 
-	return s.productRepository.UpdateProductVariant(ctx, variant.ID, variantModel)
+	return s.productRepository.UpdateProductVariant(ctx, variantdomain)
 }
 
 func (s *ProductService) DeleteProductVariant(ctx context.Context, id uint) error {
-	variantModel, err := s.productRepository.GetProductVariantByID(ctx, id)
-	if variantModel == nil || err != nil {
+	variantdomain := s.productRepository.GetProductVariantByID(ctx, id)
+	if variantdomain == nil {
 		return common.NotFound("Product variant not found")
 	}
 
-	return s.productRepository.DeleteProductVariant(ctx, variantModel.ID)
+	return s.productRepository.DeleteProductVariant(ctx, variantdomain.ID)
 }

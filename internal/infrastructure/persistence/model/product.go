@@ -9,8 +9,6 @@ type Product struct {
 	Price       int64     `gorm:"type:bigint" json:"price,omitempty"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
-
-	Variants []ProductVariant `json:"variants,omitempty"`
 }
 
 type ProductVariant struct {

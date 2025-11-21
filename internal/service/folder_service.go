@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repository"
 )
 
@@ -15,8 +15,8 @@ func NewFolderService(repo *repository.FolderRepository) *FolderService {
 	return &FolderService{repo: repo}
 }
 
-func (s *FolderService) CreateFolder(ctx context.Context, name string, description string) (*model.Folder, error) {
-	f := &model.Folder{
+func (s *FolderService) CreateFolder(ctx context.Context, name string, description string) (*domain.Folder, error) {
+	f := &domain.Folder{
 		Name:        name,
 		Description: description,
 	}
@@ -26,11 +26,11 @@ func (s *FolderService) CreateFolder(ctx context.Context, name string, descripti
 	return f, nil
 }
 
-func (s *FolderService) GetFolderByID(ctx context.Context, id uint) (*model.Folder, error) {
+func (s *FolderService) GetFolderByID(ctx context.Context, id uint) (*domain.Folder, error) {
 	return s.repo.GetFolderByID(ctx, id)
 }
 
-func (s *FolderService) ListFolders(ctx context.Context, page int, size int) ([]*model.Folder, int64, error) {
+func (s *FolderService) ListFolders(ctx context.Context, page int, size int) ([]*domain.Folder, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -41,7 +41,7 @@ func (s *FolderService) ListFolders(ctx context.Context, page int, size int) ([]
 	return s.repo.ListFolders(ctx, offset, size)
 }
 
-func (s *FolderService) UpdateFolder(ctx context.Context, folder *model.Folder) (*model.Folder, error) {
+func (s *FolderService) UpdateFolder(ctx context.Context, folder *domain.Folder) (*domain.Folder, error) {
 	if err := s.repo.UpdateFolder(ctx, folder); err != nil {
 		return nil, err
 	}

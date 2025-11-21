@@ -53,7 +53,7 @@ func (pc *ProductController) GetProductByID(ctx *gin.Context) {
 		return
 	}
 
-	product, _, err := pc.productService.GetProductByID(ctx.Request.Context(), id)
+	product, err := pc.productService.GetProductByID(ctx.Request.Context(), id)
 	if err != nil {
 		ctx.Error(err)
 		return

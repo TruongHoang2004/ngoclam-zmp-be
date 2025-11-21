@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
+import (
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
+)
 
 type FolderResponse struct {
 	ID          uint   `json:"id"`
@@ -13,7 +15,7 @@ type CreateFolderRequest struct {
 	Description string `json:"description,omitempty"`
 }
 
-func NewFolderResponse(f *model.Folder) *FolderResponse {
+func NewFolderResponse(f *domain.Folder) *FolderResponse {
 	return &FolderResponse{
 		ID:          f.ID,
 		Name:        f.Name,

@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
+import (
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
+)
 
 type CreateProductVariantRequest struct {
 	Name  string `json:"name" binding:"required,min=1,max=255"`
@@ -30,13 +32,13 @@ type ProductVariantResponse struct {
 	// Stock     int64  `json:"stock"`
 }
 
-func NewProductVariantResponse(model *model.ProductVariant) *ProductVariantResponse {
+func NewProductVariantResponse(domain *domain.ProductVariant) *ProductVariantResponse {
 	return &ProductVariantResponse{
-		ID:        model.ID,
-		ProductID: model.ProductID,
-		Name:      model.Name,
-		Price:     model.Price,
-		// Stock:     model.Stock,
+		ID:        domain.ID,
+		ProductID: domain.ProductID,
+		Name:      domain.Name,
+		Price:     domain.Price,
+		// Stock:     domain.Stock,
 	}
 }
 
@@ -45,6 +47,28 @@ type CreateProductRequest struct {
 	Description string                        `json:"description"`
 	Price       int64                         `json:"price" binding:"required,gt=0"`
 	Variants    []CreateProductVariantRequest `json:"variants,omitempty"`
+}
+
+func (p *CreateProductRequest) ToDomain() *domain.Product {
+	domainProduct := &domain.Product{
+		Name:        p.Name,
+		Description: &p.Description,
+		Price:       p.Price,
+	}
+
+	if len(p.Variants) > 0 {
+		var variants []domain.ProductVariant
+		for _, v := range p.Variants {
+			variants = append(variants, domain.ProductVariant{
+				Name:  v.Name,
+				Price: v.Price,
+				Stock: v.Stock,
+			})
+		}
+		domainProduct.Variants = &variants
+	}
+
+	return domainProduct
 }
 
 type UpdateProductRequest struct {
@@ -62,24 +86,26 @@ type ProductResponse struct {
 	Variants    []ProductVariantResponse `json:"variants,omitempty"`
 }
 
-func NewProductResponse(model *model.Product) *ProductResponse {
+func NewProductResponse(domain *domain.Product) *ProductResponse {
 	var desc string
-	if model.Description != nil {
-		desc = *model.Description
+	if domain.Description != nil {
+		desc = *domain.Description
 	}
 
 	var variant []ProductVariantResponse
-	if len(model.Variants) > 0 {
-		for _, v := range model.Variants {
-			variant = append(variant, *NewProductVariantResponse(&v))
+	if (domain.Variants != nil) && len(*domain.Variants) > 0 {
+		if len(*domain.Variants) > 0 {
+			for _, v := range *domain.Variants {
+				variant = append(variant, *NewProductVariantResponse(&v))
+			}
 		}
 	}
 
 	return &ProductResponse{
-		ID:          model.ID,
-		Name:        model.Name,
+		ID:          domain.ID,
+		Name:        domain.Name,
 		Description: desc,
-		Price:       model.Price,
+		Price:       domain.Price,
 		Variants:    variant,
 	}
 }

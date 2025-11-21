@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/sdk/imagekit"
 	"gorm.io/gorm"
@@ -24,7 +25,7 @@ func NewImageRepository(db *gorm.DB, imageKitClient *imagekit.ImageKitClient) *I
 }
 
 // UploadImage uploads an image from byte data
-func (r *ImageRepository) UploadImage(ctx context.Context, fileName string, fileData []byte) (*model.Image, error) {
+func (r *ImageRepository) UploadImage(ctx context.Context, fileName string, fileData []byte) (*domain.Image, error) {
 	opts := &imagekit.UploadOptions{
 		Folder:            r.folder,
 		UseUniqueFileName: true,
@@ -44,11 +45,11 @@ func (r *ImageRepository) UploadImage(ctx context.Context, fileName string, file
 		return nil, err
 	}
 
-	return img, nil
+	return domain.NewImageDomain(img), nil
 }
 
 // UploadImageFromReader uploads an image from io.Reader
-func (r *ImageRepository) UploadImageFromReader(ctx context.Context, file io.Reader, fileName string) (*model.Image, error) {
+func (r *ImageRepository) UploadImageFromReader(ctx context.Context, file io.Reader, fileName string) (*domain.Image, error) {
 	opts := &imagekit.UploadOptions{
 		Folder:            r.folder,
 		UseUniqueFileName: true,
@@ -68,11 +69,11 @@ func (r *ImageRepository) UploadImageFromReader(ctx context.Context, file io.Rea
 		return nil, err
 	}
 
-	return img, nil
+	return domain.NewImageDomain(img), nil
 }
 
 // UploadImageFromURL uploads an image from a URL
-func (r *ImageRepository) UploadImageFromURL(ctx context.Context, url string, fileName string) (*model.Image, error) {
+func (r *ImageRepository) UploadImageFromURL(ctx context.Context, url string, fileName string) (*domain.Image, error) {
 	opts := &imagekit.UploadOptions{
 		Folder:            r.folder,
 		UseUniqueFileName: true,
@@ -92,7 +93,7 @@ func (r *ImageRepository) UploadImageFromURL(ctx context.Context, url string, fi
 		return nil, err
 	}
 
-	return img, nil
+	return domain.NewImageDomain(img), nil
 }
 
 // Read
@@ -121,7 +122,7 @@ func (r *ImageRepository) GetAllImages(ctx context.Context, page int, limit int)
 }
 
 // Update (replace image) updates an image from byte data
-func (r *ImageRepository) UpdateImage(ctx context.Context, id uint, fileName string, fileData []byte) (*model.Image, error) {
+func (r *ImageRepository) UpdateImage(ctx context.Context, id uint, fileName string, fileData []byte) (*domain.Image, error) {
 	img, err := r.GetImageByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -137,7 +138,7 @@ func (r *ImageRepository) UpdateImage(ctx context.Context, id uint, fileName str
 }
 
 // UpdateImageFromReader updates an image from io.Reader
-func (r *ImageRepository) UpdateImageFromReader(ctx context.Context, id uint, file io.Reader, fileName string) (*model.Image, error) {
+func (r *ImageRepository) UpdateImageFromReader(ctx context.Context, id uint, file io.Reader, fileName string) (*domain.Image, error) {
 	img, err := r.GetImageByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -153,7 +154,7 @@ func (r *ImageRepository) UpdateImageFromReader(ctx context.Context, id uint, fi
 }
 
 // UpdateImageFromURL updates an image from a URL
-func (r *ImageRepository) UpdateImageFromURL(ctx context.Context, id uint, url string, fileName string) (*model.Image, error) {
+func (r *ImageRepository) UpdateImageFromURL(ctx context.Context, id uint, url string, fileName string) (*domain.Image, error) {
 	img, err := r.GetImageByID(ctx, id)
 	if err != nil {
 		return nil, err

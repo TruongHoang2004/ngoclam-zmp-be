@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
+import (
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
+)
 
 type ImageResponse struct {
 	ID   uint   `json:"id"`
@@ -13,7 +15,7 @@ type UploadImageRequest struct {
 	FileData []byte `json:"fileData"`
 }
 
-func NewImageResponse(image *model.Image) *ImageResponse {
+func NewImageResponse(image *domain.Image) *ImageResponse {
 	return &ImageResponse{
 		ID:   image.ID,
 		URL:  image.URL,
