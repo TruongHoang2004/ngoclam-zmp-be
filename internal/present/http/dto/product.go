@@ -84,6 +84,7 @@ type ProductResponse struct {
 	Description string                   `json:"description"`
 	Price       int64                    `json:"price"`
 	Variants    []ProductVariantResponse `json:"variants,omitempty"`
+	Images      []ProductImageResponse   `json:"images,omitempty"`
 }
 
 func NewProductResponse(domain *domain.Product) *ProductResponse {
@@ -93,11 +94,16 @@ func NewProductResponse(domain *domain.Product) *ProductResponse {
 	}
 
 	var variant []ProductVariantResponse
-	if (domain.Variants != nil) && len(*domain.Variants) > 0 {
-		if len(*domain.Variants) > 0 {
-			for _, v := range *domain.Variants {
-				variant = append(variant, *NewProductVariantResponse(&v))
-			}
+	if domain.Variants != nil && len(*domain.Variants) > 0 {
+		for _, v := range *domain.Variants {
+			variant = append(variant, *NewProductVariantResponse(&v))
+		}
+	}
+
+	var images []ProductImageResponse
+	if domain.Images != nil && len(*domain.Images) > 0 {
+		for _, img := range *domain.Images {
+			images = append(images, *NewProductImageResponse(&img))
 		}
 	}
 
@@ -107,5 +113,57 @@ func NewProductResponse(domain *domain.Product) *ProductResponse {
 		Description: desc,
 		Price:       domain.Price,
 		Variants:    variant,
+		Images:      images,
 	}
+}
+
+type ProductImageResponse struct {
+	ID        uint                    `json:"id"`
+	ProductID uint                    `json:"product_id"`
+	ImageID   uint                    `json:"image_id"`
+	VariantID *uint                   `json:"variant_id,omitempty"`
+	Order     int                     `json:"order"`
+	IsMain    bool                    `json:"is_main"`
+	Image     *ImageResponse          `json:"image,omitempty"`
+	Variant   *ProductVariantResponse `json:"variant,omitempty"`
+}
+
+func NewProductImageResponse(img *domain.ProductImage) *ProductImageResponse {
+	if img == nil {
+		return nil
+	}
+
+	var imageResp *ImageResponse
+	if img.Image != nil {
+		imageResp = NewImageResponse(img.Image)
+	}
+
+	var variantResp *ProductVariantResponse
+	if img.Variant != nil {
+		variantResp = NewProductVariantResponse(img.Variant)
+	}
+
+	return &ProductImageResponse{
+		ID:        img.ID,
+		ProductID: img.ProductID,
+		ImageID:   img.ImageID,
+		VariantID: img.VariantID,
+		Order:     img.Order,
+		IsMain:    img.IsMain,
+		Image:     imageResp,
+		Variant:   variantResp,
+	}
+}
+
+type AttachProductImageRequest struct {
+	ImageID   uint  `json:"image_id" binding:"required,gt=0"`
+	VariantID *uint `json:"variant_id,omitempty"`
+	Order     *int  `json:"order,omitempty"`
+	IsMain    bool  `json:"is_main"`
+}
+
+type UpdateProductImageRequest struct {
+	VariantID *uint `json:"variant_id,omitempty"`
+	Order     *int  `json:"order,omitempty"`
+	IsMain    *bool `json:"is_main,omitempty"`
 }

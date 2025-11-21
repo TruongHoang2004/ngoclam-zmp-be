@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
@@ -56,6 +57,12 @@ func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint, w
 		domainProd.Variants = &variants
 	}
 
+	images, err := r.loadProductImagesByProductID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	domainProd.SetImages(images)
+
 	return domainProd, nil
 }
 
@@ -106,12 +113,36 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 		}
 	}
 
+	imageMap := make(map[uint][]domain.ProductImage)
+	if len(ids) > 0 {
+		var productImages []*model.ProductImage
+		if err := r.db.WithContext(ctx).
+			Where("product_id IN ?", ids).
+			Preload("Image").
+			Preload("Variant").
+			Find(&productImages).Error; err != nil {
+			return nil, 0, err
+		}
+
+		for _, img := range productImages {
+			if img == nil {
+				continue
+			}
+			if d := domain.NewProductImageFromModel(img); d != nil {
+				imageMap[img.ProductID] = append(imageMap[img.ProductID], *d)
+			}
+		}
+	}
+
 	// Build final domain products
 	result := make([]*domain.Product, len(products))
 	for i, p := range products {
 		domainProd := domain.NewProductFromModel(p)
 		if vars, ok := variantMap[p.ID]; ok && len(vars) > 0 {
 			domainProd.Variants = &vars
+		}
+		if imgs, ok := imageMap[p.ID]; ok && len(imgs) > 0 {
+			domainProd.Images = &imgs
 		}
 		result[i] = domainProd
 	}
@@ -209,4 +240,111 @@ func (r *ProductRepository) loadVariantsByProductID(ctx context.Context, product
 		}
 	}
 	return result, nil
+}
+
+// === Product Image Methods ===
+
+func (r *ProductRepository) ListProductImages(ctx context.Context, productID uint) ([]*domain.ProductImage, error) {
+	images, err := r.loadProductImagesByProductID(ctx, productID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*domain.ProductImage, 0, len(images))
+	for _, img := range images {
+		if img == nil {
+			continue
+		}
+		if d := domain.NewProductImageFromModel(img); d != nil {
+			result = append(result, d)
+		}
+	}
+	return result, nil
+}
+
+func (r *ProductRepository) GetProductImageByID(ctx context.Context, id uint) (*domain.ProductImage, error) {
+	var record model.ProductImage
+	if err := r.db.WithContext(ctx).
+		Preload("Image").
+		Preload("Variant").
+		First(&record, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return domain.NewProductImageFromModel(&record), nil
+}
+
+func (r *ProductRepository) AddProductImage(ctx context.Context, img *domain.ProductImage) (*domain.ProductImage, error) {
+	record := img.ToModel()
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if record.IsMain {
+			if err := tx.Model(&model.ProductImage{}).
+				Where("product_id = ?", record.ProductID).
+				Update("is_main", false).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Create(record).Error; err != nil {
+			return err
+		}
+
+		return tx.Preload("Image").
+			Preload("Variant").
+			First(record, record.ID).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+	return domain.NewProductImageFromModel(record), nil
+}
+
+func (r *ProductRepository) UpdateProductImage(ctx context.Context, img *domain.ProductImage) (*domain.ProductImage, error) {
+	record := img.ToModel()
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if record.IsMain {
+			if err := tx.Model(&model.ProductImage{}).
+				Where("product_id = ?", record.ProductID).
+				Update("is_main", false).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Model(&model.ProductImage{}).
+			Where("id = ?", record.ID).
+			Updates(map[string]interface{}{
+				"variant_id": record.VariantID,
+				"order":      record.Order,
+				"is_main":    record.IsMain,
+			}).Error; err != nil {
+			return err
+		}
+
+		return tx.Preload("Image").
+			Preload("Variant").
+			First(record, record.ID).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+	return domain.NewProductImageFromModel(record), nil
+}
+
+func (r *ProductRepository) DeleteProductImage(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.ProductImage{}, id).Error
+}
+
+func (r *ProductRepository) loadProductImagesByProductID(ctx context.Context, productID uint) ([]*model.ProductImage, error) {
+	var images []*model.ProductImage
+	if err := r.db.WithContext(ctx).
+		Where("product_id = ?", productID).
+		Preload("Image").
+		Preload("Variant").
+		Order("is_main DESC, \"order\" ASC, id ASC").
+		Find(&images).Error; err != nil {
+		return nil, err
+	}
+	return images, nil
 }

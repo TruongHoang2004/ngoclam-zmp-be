@@ -12,11 +12,13 @@ import (
 
 type ProductService struct {
 	productRepository *repository.ProductRepository
+	imageRepository   *repository.ImageRepository
 }
 
-func NewProductService(productRepo *repository.ProductRepository) *ProductService {
+func NewProductService(productRepo *repository.ProductRepository, imageRepo *repository.ImageRepository) *ProductService {
 	return &ProductService{
 		productRepository: productRepo,
+		imageRepository:   imageRepo,
 	}
 }
 
@@ -156,4 +158,96 @@ func (s *ProductService) DeleteProductVariant(ctx context.Context, id uint) erro
 	}
 
 	return s.productRepository.DeleteProductVariant(ctx, variantdomain.ID)
+}
+
+func (s *ProductService) ListProductImages(ctx context.Context, productID uint) ([]*domain.ProductImage, error) {
+	_, err := s.productRepository.GetProductDetailByID(ctx, productID, false)
+	if err != nil {
+		return nil, common.NotFound("Product not found")
+	}
+	return s.productRepository.ListProductImages(ctx, productID)
+}
+
+func (s *ProductService) AddProductImage(ctx context.Context, productID uint, req *dto.AttachProductImageRequest) (*domain.ProductImage, error) {
+	_, err := s.productRepository.GetProductDetailByID(ctx, productID, false)
+	if err != nil {
+		return nil, common.NotFound("Product not found")
+	}
+
+	imageModel, err := s.imageRepository.GetImageByID(ctx, req.ImageID)
+	if err != nil {
+		return nil, err
+	}
+	if imageModel == nil {
+		return nil, common.NotFound("Image not found")
+	}
+
+	var variantID *uint
+	if req.VariantID != nil {
+		variant := s.productRepository.GetProductVariantByID(ctx, *req.VariantID)
+		if variant == nil || variant.ProductID != productID {
+			return nil, common.BadRequest("Variant does not belong to product", nil)
+		}
+		variantID = req.VariantID
+	}
+
+	order := 0
+	if req.Order != nil {
+		order = *req.Order
+	}
+
+	productImage := &domain.ProductImage{
+		ProductID: productID,
+		ImageID:   req.ImageID,
+		VariantID: variantID,
+		Order:     order,
+		IsMain:    req.IsMain,
+	}
+
+	return s.productRepository.AddProductImage(ctx, productImage)
+}
+
+func (s *ProductService) UpdateProductImage(ctx context.Context, productID uint, productImageID uint, req *dto.UpdateProductImageRequest) (*domain.ProductImage, error) {
+	productImage, err := s.productRepository.GetProductImageByID(ctx, productImageID)
+	if err != nil {
+		return nil, err
+	}
+	if productImage == nil || productImage.ProductID != productID {
+		return nil, common.NotFound("Product image not found")
+	}
+
+	if req.VariantID != nil {
+		if *req.VariantID == 0 {
+			productImage.VariantID = nil
+			productImage.Variant = nil
+		} else {
+			variant := s.productRepository.GetProductVariantByID(ctx, *req.VariantID)
+			if variant == nil || variant.ProductID != productID {
+				return nil, common.BadRequest("Variant does not belong to product", nil)
+			}
+			productImage.VariantID = req.VariantID
+		}
+	}
+
+	if req.Order != nil {
+		productImage.Order = *req.Order
+	}
+
+	if req.IsMain != nil {
+		productImage.IsMain = *req.IsMain
+	}
+
+	return s.productRepository.UpdateProductImage(ctx, productImage)
+}
+
+func (s *ProductService) DeleteProductImage(ctx context.Context, productID uint, productImageID uint) error {
+	productImage, err := s.productRepository.GetProductImageByID(ctx, productImageID)
+	if err != nil {
+		return err
+	}
+	if productImage == nil || productImage.ProductID != productID {
+		return common.NotFound("Product image not found")
+	}
+
+	return s.productRepository.DeleteProductImage(ctx, productImageID)
 }

@@ -29,6 +29,11 @@ func (pc *ProductController) RegisterRoutes(r *gin.RouterGroup) {
 		products.POST("/variants", pc.AddProductVariant)
 		products.PUT("/variants", pc.UpdateProductVariant)
 		products.DELETE("/variants/:id", pc.DeleteProductVariant)
+
+		products.GET("/:id/images", pc.ListProductImages)
+		products.POST("/:id/images", pc.AttachProductImage)
+		products.PATCH("/:id/images/:imageId", pc.UpdateProductImage)
+		products.DELETE("/:id/images/:imageId", pc.DeleteProductImage)
 	}
 }
 
@@ -151,4 +156,96 @@ func (pc *ProductController) DeleteProductVariant(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(200, gin.H{"message": "Product variant deleted successfully"})
+}
+
+func (pc *ProductController) ListProductImages(ctx *gin.Context) {
+	id, err := common.ParseUintParam(ctx, "id")
+	if err != nil {
+		ctx.Error(common.BadRequest("Invalid ID format", err))
+		return
+	}
+
+	images, err := pc.productService.ListProductImages(ctx.Request.Context(), id)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	imageResponses := make([]*dto.ProductImageResponse, 0, len(images))
+	for _, img := range images {
+		imageResponses = append(imageResponses, dto.NewProductImageResponse(img))
+	}
+
+	ctx.JSON(200, gin.H{"images": imageResponses})
+}
+
+func (pc *ProductController) AttachProductImage(ctx *gin.Context) {
+	id, err := common.ParseUintParam(ctx, "id")
+	if err != nil {
+		ctx.Error(common.BadRequest("Invalid ID format", err))
+		return
+	}
+
+	payload := dto.AttachProductImageRequest{}
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.Error(common.BadRequest("Invalid request body", err))
+		return
+	}
+
+	image, err := pc.productService.AddProductImage(ctx.Request.Context(), id, &payload)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(201, dto.NewProductImageResponse(image))
+}
+
+func (pc *ProductController) UpdateProductImage(ctx *gin.Context) {
+	productID, err := common.ParseUintParam(ctx, "id")
+	if err != nil {
+		ctx.Error(common.BadRequest("Invalid ID format", err))
+		return
+	}
+
+	imageID, err := common.ParseUintParam(ctx, "imageId")
+	if err != nil {
+		ctx.Error(common.BadRequest("Invalid image ID format", err))
+		return
+	}
+
+	payload := dto.UpdateProductImageRequest{}
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		ctx.Error(common.BadRequest("Invalid request body", err))
+		return
+	}
+
+	image, err := pc.productService.UpdateProductImage(ctx.Request.Context(), productID, imageID, &payload)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(200, dto.NewProductImageResponse(image))
+}
+
+func (pc *ProductController) DeleteProductImage(ctx *gin.Context) {
+	productID, err := common.ParseUintParam(ctx, "id")
+	if err != nil {
+		ctx.Error(common.BadRequest("Invalid ID format", err))
+		return
+	}
+
+	imageID, err := common.ParseUintParam(ctx, "imageId")
+	if err != nil {
+		ctx.Error(common.BadRequest("Invalid image ID format", err))
+		return
+	}
+
+	if err := pc.productService.DeleteProductImage(ctx.Request.Context(), productID, imageID); err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(200, gin.H{"message": "Product image deleted successfully"})
 }

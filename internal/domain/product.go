@@ -12,8 +12,23 @@ type Product struct {
 	Description *string           `json:"description,omitempty"`
 	Price       int64             `json:"price,omitempty"`
 	Variants    *[]ProductVariant `json:"variants,omitempty"`
+	Images      *[]ProductImage   `json:"images,omitempty"`
 	CreatedAt   time.Time         `json:"created_at"`
 	UpdatedAt   time.Time         `json:"updated_at"`
+}
+
+type ProductImage struct {
+	ID        uint            `json:"id"`
+	ProductID uint            `json:"product_id"`
+	Product   *Product        `json:"product,omitempty"`
+	ImageID   uint            `json:"image_id"`
+	Image     *Image          `json:"image,omitempty"`
+	Order     int             `json:"order"`
+	IsMain    bool            `json:"is_main"`
+	VariantID *uint           `json:"variant_id,omitempty"`
+	Variant   *ProductVariant `json:"variant,omitempty"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
 }
 
 type ProductVariant struct {
@@ -54,6 +69,23 @@ func (p *Product) SetVariants(variants []*model.ProductVariant) {
 	p.Variants = &variantList
 }
 
+func (p *Product) SetImages(images []*model.ProductImage) {
+	if len(images) == 0 {
+		empty := make([]ProductImage, 0)
+		p.Images = &empty
+		return
+	}
+
+	var imageList []ProductImage
+	for _, img := range images {
+		if img == nil {
+			continue
+		}
+		imageList = append(imageList, *NewProductImageFromModel(img))
+	}
+	p.Images = &imageList
+}
+
 func (p *Product) ToModel() *model.Product {
 	return &model.Product{
 		ID:          p.ID,
@@ -74,5 +106,51 @@ func (pv *ProductVariant) ToModel(productID uint) *model.ProductVariant {
 		Price:     pv.Price,
 		CreatedAt: pv.CreatedAt,
 		UpdatedAt: pv.UpdatedAt,
+	}
+}
+
+func NewProductImageFromModel(m *model.ProductImage) *ProductImage {
+	if m == nil {
+		return nil
+	}
+
+	pi := &ProductImage{
+		ID:        m.ID,
+		ProductID: m.ProductID,
+		ImageID:   m.ImageID,
+		Order:     m.Order,
+		IsMain:    m.IsMain,
+		VariantID: m.VariantID,
+		CreatedAt: m.CreatedAt,
+		UpdatedAt: m.UpdatedAt,
+	}
+
+	if m.Image.ID != 0 {
+		pi.Image = NewImageDomain(&m.Image)
+	}
+
+	if m.Variant != nil && m.Variant.ID != 0 {
+		pi.Variant = &ProductVariant{
+			ID:        m.Variant.ID,
+			ProductID: m.Variant.ProductID,
+			Name:      m.Variant.Name,
+			Stock:     m.Variant.Stock,
+			Price:     m.Variant.Price,
+			CreatedAt: m.Variant.CreatedAt,
+			UpdatedAt: m.Variant.UpdatedAt,
+		}
+	}
+
+	return pi
+}
+
+func (pi *ProductImage) ToModel() *model.ProductImage {
+	return &model.ProductImage{
+		ID:        pi.ID,
+		ProductID: pi.ProductID,
+		VariantID: pi.VariantID,
+		ImageID:   pi.ImageID,
+		Order:     pi.Order,
+		IsMain:    pi.IsMain,
 	}
 }
