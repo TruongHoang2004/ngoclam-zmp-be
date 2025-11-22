@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	Mode               string
 	DBUrl              string
 	AppPort            string
 	BasePath           string
@@ -22,6 +23,7 @@ var AppConfig *Config
 func InitConfig() *Config {
 	LoadEnv()
 	AppConfig = &Config{
+		Mode:               getEnv("APP_MODE", "development"),
 		DBUrl:              getEnv("DB_URL", ""),
 		AppPort:            getEnv("APP_PORT", "8080"),
 		BasePath:           getEnv("BASE_PATH", "./uploads"),
@@ -52,4 +54,8 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func IsProdEnv() bool {
+	return AppConfig.Mode == "production"
 }

@@ -47,6 +47,7 @@ type CreateProductRequest struct {
 	Description string                        `json:"description"`
 	Price       int64                         `json:"price" binding:"required,gt=0"`
 	Variants    []CreateProductVariantRequest `json:"variants,omitempty"`
+	Images      []AttachProductImageRequest   `json:"images,omitempty"`
 }
 
 func (p *CreateProductRequest) ToDomain() *domain.Product {
@@ -66,6 +67,19 @@ func (p *CreateProductRequest) ToDomain() *domain.Product {
 			})
 		}
 		domainProduct.Variants = &variants
+	}
+
+	if len(p.Images) > 0 {
+		var images []domain.ProductImage
+		for _, img := range p.Images {
+			images = append(images, domain.ProductImage{
+				ImageID:   img.ImageID,
+				VariantID: img.VariantID,
+				Order:     0,
+				IsMain:    img.IsMain,
+			})
+		}
+		domainProduct.Images = &images
 	}
 
 	return domainProduct

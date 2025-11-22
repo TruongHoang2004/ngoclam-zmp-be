@@ -2,7 +2,6 @@ package module
 
 import (
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/middleware"
 	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +19,6 @@ var RouterModule = fx.Options(
 		r := gin.Default()
 
 		r.Use(cors.Default())
-		r.Use(middleware.ErrorHandler())
 
 		return r
 	}),

@@ -17,6 +17,8 @@ type ProductVariant struct {
 	Name      string    `gorm:"type:varchar(255)" json:"name" `
 	Stock     int64     `gorm:"type:bigint" json:"stock,omitempty"`
 	Price     int64     `gorm:"type:bigint" json:"price,omitempty"`
+	Order     int       `gorm:"default:0" json:"order,omitempty"`
+	ImageID   *uint     `gorm:"index" json:"image_id,omitempty"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

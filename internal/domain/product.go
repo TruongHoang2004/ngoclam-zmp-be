@@ -18,17 +18,15 @@ type Product struct {
 }
 
 type ProductImage struct {
-	ID        uint            `json:"id"`
-	ProductID uint            `json:"product_id"`
-	Product   *Product        `json:"product,omitempty"`
-	ImageID   uint            `json:"image_id"`
-	Image     *Image          `json:"image,omitempty"`
-	Order     int             `json:"order"`
-	IsMain    bool            `json:"is_main"`
-	VariantID *uint           `json:"variant_id,omitempty"`
-	Variant   *ProductVariant `json:"variant,omitempty"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ID        uint      `json:"id"`
+	ProductID uint      `json:"product_id"`
+	Product   *Product  `json:"product,omitempty"`
+	ImageID   uint      `json:"image_id"`
+	Image     *Image    `json:"image,omitempty"`
+	Order     int       `json:"order"`
+	IsMain    bool      `json:"is_main"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ProductVariant struct {
@@ -36,6 +34,7 @@ type ProductVariant struct {
 	ProductID uint      `json:"product_id"`
 	Name      string    `json:"name"`
 	Stock     int64     `json:"stock,omitempty"`
+	Order     int       `json:"order,omitempty"`
 	Price     int64     `json:"price,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -120,7 +119,6 @@ func NewProductImageFromModel(m *model.ProductImage) *ProductImage {
 		ImageID:   m.ImageID,
 		Order:     m.Order,
 		IsMain:    m.IsMain,
-		VariantID: m.VariantID,
 		CreatedAt: m.CreatedAt,
 		UpdatedAt: m.UpdatedAt,
 	}
