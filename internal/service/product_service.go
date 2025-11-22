@@ -63,7 +63,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateP
 }
 
 func (s *ProductService) GetProductByID(ctx context.Context, id uint) (*domain.Product, error) {
-	product, err := s.productRepository.GetProductDetailByID(ctx, id, true)
+	product, err := s.productRepository.GetProductDetailByID(ctx, id)
 	if err != nil {
 		return nil, common.NotFound("Product not found")
 	}
@@ -77,7 +77,7 @@ func (s *ProductService) ListProducts(ctx context.Context, page int, size int) (
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateProductRequest) error {
-	productdomain, err := s.productRepository.GetProductDetailByID(ctx, product.ID, false)
+	productdomain, err := s.productRepository.GetProductByID(ctx, product.ID)
 	if err != nil {
 		return common.NotFound("Product not found")
 	}
@@ -96,7 +96,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateP
 }
 
 func (s *ProductService) DeleteProduct(ctx context.Context, id uint) error {
-	productdomain, err := s.productRepository.GetProductDetailByID(ctx, id, false)
+	productdomain, err := s.productRepository.GetProductByID(ctx, id)
 	if err != nil {
 		return common.NotFound("Product not found")
 	}
@@ -105,7 +105,7 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id uint) error {
 }
 
 func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.AddProductVariantRequest) error {
-	product, err := s.productRepository.GetProductDetailByID(ctx, variant.ProductID, false)
+	product, err := s.productRepository.GetProductByID(ctx, variant.ProductID)
 	if product == nil {
 		return common.NotFound("Product not found")
 	}
@@ -161,7 +161,7 @@ func (s *ProductService) DeleteProductVariant(ctx context.Context, id uint) erro
 }
 
 func (s *ProductService) ListProductImages(ctx context.Context, productID uint) ([]*domain.ProductImage, error) {
-	_, err := s.productRepository.GetProductDetailByID(ctx, productID, false)
+	_, err := s.productRepository.GetProductByID(ctx, productID)
 	if err != nil {
 		return nil, common.NotFound("Product not found")
 	}
@@ -169,7 +169,7 @@ func (s *ProductService) ListProductImages(ctx context.Context, productID uint) 
 }
 
 func (s *ProductService) AddProductImage(ctx context.Context, productID uint, req *dto.AttachProductImageRequest) (*domain.ProductImage, error) {
-	_, err := s.productRepository.GetProductDetailByID(ctx, productID, false)
+	_, err := s.productRepository.GetProductByID(ctx, productID)
 	if err != nil {
 		return nil, common.NotFound("Product not found")
 	}

@@ -17,7 +17,4 @@ WORKDIR /app
 # Copy binary app
 COPY --from=builder /app/ngoclam-zmp-be ./ngoclam-zmp-be
 
-# Copy config nếu cần
-COPY ./config ./config
-
 ENTRYPOINT ["./ngoclam-zmp-be"]

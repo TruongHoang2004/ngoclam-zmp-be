@@ -40,8 +40,11 @@ func (r *ProductRepository) IsExistProduct(ctx context.Context, name string) (bo
 	return count > 0, nil
 }
 
-// GetProductDetailByID fetches product + manually loads variants if requested
-func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint, withVariants bool) (*domain.Product, error) {
+func (r *ProductRepository) GetProductByID(ctx context.Context, id uint) (*domain.Product, error) {
+	return r.GetProductDetailByID(ctx, id)
+}
+
+func (r *ProductRepository) GetProductSummaryByID(ctx context.Context, id uint) (*domain.Product, error) {
 	var prod model.Product
 	if err := r.db.WithContext(ctx).First(&prod, id).Error; err != nil {
 		return nil, err
@@ -49,13 +52,37 @@ func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint, w
 
 	domainProd := domain.NewProductFromModel(&prod)
 
-	if withVariants {
-		variants, err := r.loadVariantsByProductID(ctx, id)
-		if err != nil {
-			return nil, err
+	var img model.ProductImage
+	if err := r.db.WithContext(ctx).
+		Where("product_id = ? AND is_main = ?", id, true).
+		Preload("Image").
+		Preload("Variant").
+		First(&img).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domainProd, nil
 		}
-		domainProd.Variants = &variants
+		return nil, err
 	}
+
+	domainProd.SetImages([]*model.ProductImage{&img})
+
+	return domainProd, nil
+}
+
+// GetProductDetailByID fetches product + manually loads variants if requested
+func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint) (*domain.Product, error) {
+	var prod model.Product
+	if err := r.db.WithContext(ctx).First(&prod, id).Error; err != nil {
+		return nil, err
+	}
+
+	domainProd := domain.NewProductFromModel(&prod)
+
+	variants, err := r.loadVariantsByProductID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	domainProd.Variants = &variants
 
 	images, err := r.loadProductImagesByProductID(ctx, id)
 	if err != nil {
@@ -89,35 +116,11 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 		}
 	}
 
-	// Load all variants in one query
-	variantMap := make(map[uint][]domain.ProductVariant)
-	if len(ids) > 0 {
-		var variants []model.ProductVariant
-		if err := r.db.WithContext(ctx).
-			Where("product_id IN ?", ids).
-			Find(&variants).Error; err != nil {
-			return nil, 0, err
-		}
-
-		for _, v := range variants {
-			dv := domain.ProductVariant{
-				ID:        v.ID,
-				ProductID: v.ProductID,
-				Name:      v.Name,
-				Stock:     v.Stock,
-				Price:     v.Price,
-				CreatedAt: v.CreatedAt,
-				UpdatedAt: v.UpdatedAt,
-			}
-			variantMap[v.ProductID] = append(variantMap[v.ProductID], dv)
-		}
-	}
-
 	imageMap := make(map[uint][]domain.ProductImage)
 	if len(ids) > 0 {
 		var productImages []*model.ProductImage
 		if err := r.db.WithContext(ctx).
-			Where("product_id IN ?", ids).
+			Where("product_id IN ? AND is_main = ?", ids, true).
 			Preload("Image").
 			Preload("Variant").
 			Find(&productImages).Error; err != nil {
@@ -128,8 +131,12 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 			if img == nil {
 				continue
 			}
+			// keep only one main image per product
+			if _, exists := imageMap[img.ProductID]; exists {
+				continue
+			}
 			if d := domain.NewProductImageFromModel(img); d != nil {
-				imageMap[img.ProductID] = append(imageMap[img.ProductID], *d)
+				imageMap[img.ProductID] = []domain.ProductImage{*d}
 			}
 		}
 	}
@@ -138,9 +145,6 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 	result := make([]*domain.Product, len(products))
 	for i, p := range products {
 		domainProd := domain.NewProductFromModel(p)
-		if vars, ok := variantMap[p.ID]; ok && len(vars) > 0 {
-			domainProd.Variants = &vars
-		}
 		if imgs, ok := imageMap[p.ID]; ok && len(imgs) > 0 {
 			domainProd.Images = &imgs
 		}
