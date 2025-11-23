@@ -8,6 +8,7 @@ import (
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ProductRepository struct {
@@ -29,15 +30,23 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, product *domain.P
 }
 
 // IsExistProduct checks if a product with the same name already exists
-func (r *ProductRepository) IsExistProduct(ctx context.Context, name string) (bool, error) {
+func (r *ProductRepository) IsExistProduct(ctx context.Context, name string) (bool, *common.Error) {
 	var count int64
+
+	conds := []clause.Expression{
+		clause.Eq{Column: "name", Value: name},
+	}
+
 	err := r.db.WithContext(ctx).
 		Model(&model.Product{}).
-		Where("name = ?", name).
-		Count(&count).Error
+		Clauses(conds...).
+		Count(&count).
+		Error
+
 	if err != nil {
-		return false, err
+		return false, common.ErrSystemError(ctx, err.Error())
 	}
+
 	return count > 0, nil
 }
 

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
@@ -22,7 +21,7 @@ func NewProductService(productRepo *repositories.ProductRepository, imageRepo *r
 	}
 }
 
-func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateProductRequest) error {
+func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateProductRequest) *common.Error {
 
 	varNameSet := make(map[string]struct{})
 	for _, v := range product.Variants {
@@ -31,7 +30,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateP
 			continue // optional: skip empty names
 		}
 		if _, exists := varNameSet[name]; exists {
-			return common.BadRequest(fmt.Sprintf("Duplicate variant name: %s", name))
+			return common.ErrConflict(ctx, "Product variant", "already exists")
 		}
 		varNameSet[name] = struct{}{}
 	}
@@ -44,7 +43,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateP
 	}
 
 	if existed {
-		return common.Conflict("Product already exists")
+		return common.ErrConflict(ctx, "Product", "already exists")
 	}
 
 	if domainProduct.Variants == nil {

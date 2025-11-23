@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
@@ -11,12 +10,14 @@ import (
 )
 
 type ImageController struct {
+	*baseController
 	imageService *services.ImageService
 }
 
-func NewImageController(imageService *services.ImageService) *ImageController {
+func NewImageController(base *baseController, imageService *services.ImageService) *ImageController {
 	return &ImageController{
-		imageService: imageService,
+		baseController: base,
+		imageService:   imageService,
 	}
 }
 
@@ -34,9 +35,9 @@ func (c *ImageController) RegisterRoutes(r *gin.RouterGroup) {
 }
 
 func (c *ImageController) UploadImage(ctx *gin.Context) {
-	file, err := ctx.FormFile("file")
+	file, err := c.GetFile(ctx, "file")
 	if err != nil {
-		ctx.Error(common.BadRequest("File is required", err))
+		c.ErrorData(ctx, err)
 		return
 	}
 
@@ -44,9 +45,9 @@ func (c *ImageController) UploadImage(ctx *gin.Context) {
 	fileName := file.Filename
 
 	// Open the file to read its content
-	f, err := file.Open()
-	if err != nil {
-		ctx.Error(common.BadRequest("Failed to open file", err))
+	f, ferr := file.Open()
+	if ferr != nil {
+		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetDetail(ferr.Error()).SetSource(common.CurrentService))
 		return
 	}
 	defer f.Close()
@@ -68,14 +69,14 @@ func (c *ImageController) UploadImageFromURL(ctx *gin.Context) {
 		FileName string `json:"file_name,omitempty"`
 	}
 
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	if err := c.BindAndValidateRequest(ctx, &req); err != nil {
+		c.ErrorData(ctx, err)
 		return
 	}
 
 	image, err := c.imageService.UploadImageFromURL(ctx.Request.Context(), req.URL, req.FileName)
 	if err != nil {
-		ctx.Error(err)
+		c.ErrorData(ctx, err)
 		return
 	}
 
@@ -84,17 +85,15 @@ func (c *ImageController) UploadImageFromURL(ctx *gin.Context) {
 
 func (c *ImageController) GetImageByID(ctx *gin.Context) {
 
-	idParam := ctx.Param("id")
-	var id uint
-	_, err := fmt.Sscanf(idParam, "%d", &id)
+	id, err := c.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		c.ErrorData(ctx, err)
 		return
 	}
 
 	image, err := c.imageService.GetImageByID(ctx.Request.Context(), id)
 	if err != nil {
-		ctx.Error(err)
+		c.ErrorData(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, dto.NewImageResponse(image))
@@ -103,14 +102,14 @@ func (c *ImageController) GetImageByID(ctx *gin.Context) {
 func (c *ImageController) GetAllImages(ctx *gin.Context) {
 	var req dto.PaginationRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid pagination query", err))
+		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetSource(common.CurrentService))
 		return
 	}
 	req.Normalize()
 
 	images, total, err := c.imageService.GetAllImages(ctx.Request.Context(), req.Page, req.Size)
 	if err != nil {
-		ctx.Error(err)
+		c.ErrorData(ctx, err)
 		return
 	}
 
@@ -119,35 +118,33 @@ func (c *ImageController) GetAllImages(ctx *gin.Context) {
 		imageResponses = append(imageResponses, *dto.NewImageResponse(img))
 	}
 
-	pag := dto.NewPaginationResponse(imageResponses, total, req)
-	ctx.JSON(http.StatusOK, pag)
+	page := dto.NewPaginationResponse(imageResponses, total, req)
+	ctx.JSON(http.StatusOK, page)
 
 }
 
 func (c *ImageController) UpdateImage(ctx *gin.Context) {
-	id := ctx.Param("id")
-	var idUint uint
-	_, err := fmt.Sscanf(id, "%d", &idUint)
+	id, err := c.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		c.ErrorData(ctx, err)
 		return
 	}
 
-	file, err := ctx.FormFile("file")
+	file, err := c.GetFile(ctx, "file")
 	if err != nil {
-		ctx.Error(common.BadRequest("File is required", err))
+		c.ErrorData(ctx, err)
 		return
 	}
 
 	fileName := file.Filename
-	f, err := file.Open()
-	if err != nil {
-		ctx.Error(common.BadRequest("Failed to open file", err))
+	f, ferr := file.Open()
+	if ferr != nil {
+		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetDetail(ferr.Error()).SetSource(common.CurrentService))
 		return
 	}
 	defer f.Close()
 
-	image, err := c.imageService.UpdateImageFromReader(ctx.Request.Context(), idUint, f, fileName)
+	image, err := c.imageService.UpdateImageFromReader(ctx.Request.Context(), id, f, fileName)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -158,11 +155,9 @@ func (c *ImageController) UpdateImage(ctx *gin.Context) {
 
 // UpdateImageFromURL handles image update from a URL
 func (c *ImageController) UpdateImageFromURL(ctx *gin.Context) {
-	id := ctx.Param("id")
-	var idUint uint
-	_, err := fmt.Sscanf(id, "%d", &idUint)
+	id, err := c.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		c.ErrorData(ctx, err)
 		return
 	}
 
@@ -171,12 +166,12 @@ func (c *ImageController) UpdateImageFromURL(ctx *gin.Context) {
 		FileName string `json:"file_name,omitempty"`
 	}
 
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	if err := c.BindAndValidateRequest(ctx, &req); err != nil {
+		c.ErrorData(ctx, err)
 		return
 	}
 
-	image, err := c.imageService.UpdateImageFromURL(ctx.Request.Context(), idUint, req.URL, req.FileName)
+	image, err := c.imageService.UpdateImageFromURL(ctx.Request.Context(), id, req.URL, req.FileName)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -186,17 +181,15 @@ func (c *ImageController) UpdateImageFromURL(ctx *gin.Context) {
 }
 
 func (c *ImageController) DeleteImage(ctx *gin.Context) {
-	id := ctx.Param("id")
-	var idUint uint
-	_, err := fmt.Sscanf(id, "%d", &idUint)
+	id, err := c.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		c.ErrorData(ctx, err)
 		return
 	}
 
-	err = c.imageService.DeleteImage(ctx.Request.Context(), idUint)
+	err = c.imageService.DeleteImage(ctx.Request.Context(), id)
 	if err != nil {
-		ctx.Error(err)
+		c.ErrorData(ctx, err)
 		return
 	}
 

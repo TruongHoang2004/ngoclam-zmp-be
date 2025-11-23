@@ -15,6 +15,11 @@ type CreateFolderRequest struct {
 	Description string `json:"description,omitempty"`
 }
 
+type UpdateFolderRequest struct {
+	Name        string `json:"name" `
+	Description string `json:"description,omitempty"`
+}
+
 func NewFolderResponse(f *domain.Folder) *FolderResponse {
 	return &FolderResponse{
 		ID:          f.ID,

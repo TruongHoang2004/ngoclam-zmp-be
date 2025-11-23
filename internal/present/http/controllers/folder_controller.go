@@ -1,11 +1,9 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils/casting"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -16,8 +14,14 @@ type FolderController struct {
 	folderService *services.FolderService
 }
 
-func NewFolderController(folderService *services.FolderService) *FolderController {
-	return &FolderController{folderService: folderService}
+func NewFolderController(
+	base *baseController,
+	folderService *services.FolderService,
+) *FolderController {
+	return &FolderController{
+		baseController: base,
+		folderService:  folderService,
+	}
 }
 
 func (c *FolderController) RegisterRoutes(r *gin.RouterGroup) {
@@ -47,10 +51,9 @@ func (c *FolderController) CreateFolder(ctx *gin.Context) {
 }
 
 func (c *FolderController) GetFolderByID(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	id, err := casting.StringToUint(idParam)
+	id, err := c.GetUintParam(ctx, "id")
 	if err != nil {
-		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetDetail("Invalid ID format"))
+		c.ErrorData(ctx, err)
 		return
 	}
 
@@ -65,14 +68,14 @@ func (c *FolderController) GetFolderByID(ctx *gin.Context) {
 func (c *FolderController) ListFolders(ctx *gin.Context) {
 	var req dto.PaginationRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid pagination query", err))
+		c.ErrorData(ctx, common.ErrBadRequest(ctx))
 		return
 	}
 	req.Normalize()
 
 	folders, total, err := c.folderService.ListFolders(ctx.Request.Context(), req.Page, req.Size)
 	if err != nil {
-		ctx.Error(err)
+		c.ErrorData(ctx, err)
 		return
 	}
 
@@ -86,29 +89,19 @@ func (c *FolderController) ListFolders(ctx *gin.Context) {
 }
 
 func (c *FolderController) UpdateFolder(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	var id uint
-	_, err := fmt.Sscanf(idParam, "%d", &id)
+	id, err := c.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		c.ErrorData(ctx, err)
 		return
 	}
 
-	var req dto.CreateFolderRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	var req dto.UpdateFolderRequest
+	if err := c.BindAndValidateRequest(ctx, &req); err != nil {
+		c.ErrorData(ctx, err)
 		return
 	}
 
-	f, err := c.folderService.GetFolderByID(ctx.Request.Context(), id)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-	f.Name = req.Name
-	f.Description = req.Description
-
-	updated, err := c.folderService.UpdateFolder(ctx.Request.Context(), f)
+	updated, err := c.folderService.UpdateFolder(ctx.Request.Context(), id, &req)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -117,11 +110,9 @@ func (c *FolderController) UpdateFolder(ctx *gin.Context) {
 }
 
 func (c *FolderController) DeleteFolder(ctx *gin.Context) {
-	idParam := ctx.Param("id")
-	var id uint
-	_, err := fmt.Sscanf(idParam, "%d", &id)
+	id, err := c.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		c.ErrorData(ctx, err)
 		return
 	}
 

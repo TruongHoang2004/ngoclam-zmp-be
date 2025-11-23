@@ -8,6 +8,7 @@ import (
 )
 
 type ProductController struct {
+	*baseController
 	productService *services.ProductService
 }
 
@@ -38,14 +39,14 @@ func (pc *ProductController) RegisterRoutes(r *gin.RouterGroup) {
 }
 
 func (pc *ProductController) CreateProduct(ctx *gin.Context) {
-	payload := dto.CreateProductRequest{}
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	req := new(dto.CreateProductRequest)
+	if err := pc.BindAndValidateRequest(ctx, req); err != nil {
+		pc.ErrorData(ctx, err)
 		return
 	}
 
-	if err := pc.productService.CreateProduct(ctx.Request.Context(), &payload); err != nil {
-		ctx.Error(err)
+	if err := pc.productService.CreateProduct(ctx.Request.Context(), req); err != nil {
+		pc.ErrorData(ctx, err)
 		return
 	}
 	ctx.JSON(201, gin.H{"message": "Product created successfully"})
@@ -90,12 +91,12 @@ func (pc *ProductController) GetAllProduct(ctx *gin.Context) {
 
 func (pc *ProductController) UpdateProduct(ctx *gin.Context) {
 	payload := dto.UpdateProductRequest{}
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(common.BadRequest("Invalid request body", err))
 		return
 	}
 
-	if err := pc.productService.UpdateProduct(ctx.Request.Context(), &payload); err != nil {
+	if err := pc.productService.UpdateProduct(ctx.Request.Context(), &req); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -118,12 +119,12 @@ func (pc *ProductController) DeleteProduct(ctx *gin.Context) {
 
 func (pc *ProductController) AddProductVariant(ctx *gin.Context) {
 	payload := dto.AddProductVariantRequest{}
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(common.BadRequest("Invalid request body", err))
 		return
 	}
 
-	if err := pc.productService.AddProductVariant(ctx.Request.Context(), &payload); err != nil {
+	if err := pc.productService.AddProductVariant(ctx.Request.Context(), &req); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -132,12 +133,12 @@ func (pc *ProductController) AddProductVariant(ctx *gin.Context) {
 
 func (pc *ProductController) UpdateProductVariant(ctx *gin.Context) {
 	payload := dto.UpdateProductVariantRequest{}
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(common.BadRequest("Invalid request body", err))
 		return
 	}
 
-	if err := pc.productService.UpdateProductVariant(ctx.Request.Context(), &payload); err != nil {
+	if err := pc.productService.UpdateProductVariant(ctx.Request.Context(), &req); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -187,7 +188,7 @@ func (pc *ProductController) AttachProductImage(ctx *gin.Context) {
 	}
 
 	payload := dto.AttachProductImageRequest{}
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(common.BadRequest("Invalid request body", err))
 		return
 	}
@@ -202,25 +203,25 @@ func (pc *ProductController) AttachProductImage(ctx *gin.Context) {
 }
 
 func (pc *ProductController) UpdateProductImage(ctx *gin.Context) {
-	productID, err := common.ParseUintParam(ctx, "id")
+	productID, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
-	imageID, err := common.ParseUintParam(ctx, "imageId")
+	imageID, err := pc.GetUintParam(ctx, "imageId")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid image ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
-	payload := dto.UpdateProductImageRequest{}
-	if err := ctx.ShouldBindJSON(&payload); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	req := dto.UpdateProductImageRequest{}
+	if err := pc.BindAndValidateRequest(ctx, &req); err != nil {
+		pc.ErrorData(ctx, err)
 		return
 	}
 
-	image, err := pc.productService.UpdateProductImage(ctx.Request.Context(), productID, imageID, &payload)
+	image, err := pc.productService.UpdateProductImage(ctx.Request.Context(), productID, imageID, &req)
 	if err != nil {
 		ctx.Error(err)
 		return

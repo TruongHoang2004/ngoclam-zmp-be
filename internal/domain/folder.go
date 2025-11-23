@@ -46,3 +46,14 @@ func (f *Folder) AddChildren(children []Folder) {
 func (f *Folder) AddImages(images []Image) {
 	f.Images = &images
 }
+
+func (f *Folder) ToModel() *model.Folder {
+	return &model.Folder{
+		ID:          f.ID,
+		Name:        f.Name,
+		Description: f.Description,
+		ParentID:    f.ParentID,
+		CreatedAt:   f.CreatedAt,
+		UpdatedAt:   f.UpdatedAt,
+	}
+}

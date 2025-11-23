@@ -37,11 +37,12 @@ func (r *FolderRepository) GetFolderByID(ctx context.Context, id uint) (*domain.
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, common.ErrNotFound(ctx, "folder", "not found").SetSource(common.CurrentService)
 		}
+		return nil, r.returnError(ctx, err)
 	}
 	return domain.NewFolderDomain(folder), nil
 }
 
-func (r *FolderRepository) ListFolders(ctx context.Context, offset int, limit int) ([]*domain.Folder, int64, error) {
+func (r *FolderRepository) ListFolders(ctx context.Context, offset int, limit int) ([]*domain.Folder, int64, *common.Error) {
 	query := r.db.Model(&model.Folder{})
 
 	var total int64
@@ -49,7 +50,7 @@ func (r *FolderRepository) ListFolders(ctx context.Context, offset int, limit in
 
 	var list []*model.Folder
 	if err := query.Offset(offset).Limit(limit).Find(&list).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, common.ErrSystemError(ctx, err.Error())
 	}
 	domainList := make([]*domain.Folder, 0, len(list))
 	for _, f := range list {
@@ -58,15 +59,13 @@ func (r *FolderRepository) ListFolders(ctx context.Context, offset int, limit in
 	return domainList, total, nil
 }
 
-func (r *FolderRepository) UpdateFolder(ctx context.Context, folder *domain.Folder) error {
-	return r.db.WithContext(ctx).Save(&model.Folder{
-		ID:          folder.ID,
-		Name:        folder.Name,
-		Description: folder.Description,
-		ParentID:    folder.ParentID,
-		CreatedAt:   folder.CreatedAt,
-		UpdatedAt:   folder.UpdatedAt,
-	}).Error
+func (r *FolderRepository) UpdateFolder(ctx context.Context, folder *domain.Folder) (*domain.Folder, *common.Error) {
+	f := folder.ToModel()
+
+	if err := r.db.WithContext(ctx).Save(f).Error; err != nil {
+		return nil, common.ErrSystemError(ctx, err.Error())
+	}
+	return domain.NewFolderDomain(f), nil
 }
 
 func (r *FolderRepository) DeleteFolder(ctx context.Context, id uint) error {

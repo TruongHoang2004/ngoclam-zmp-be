@@ -3,11 +3,13 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"strings"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/log"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils/casting"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -29,6 +31,30 @@ func (b *baseController) Success(c *gin.Context, data interface{}) {
 func (b *baseController) ErrorData(c *gin.Context, err *common.Error) {
 	log.IErr(c.Request.Context(), err)
 	c.JSON(err.GetHttpStatus(), common.ConvertErrorToResponse(err))
+}
+
+func (b *baseController) GetUintParam(c *gin.Context, key string) (uint, *common.Error) {
+	param := c.Param(key)
+	if param == "" {
+		log.Warn(c, "param %s is empty", key)
+		return 0, common.ErrBadRequest(c).SetDetail(fmt.Sprintf("param %s is empty", key)).SetSource(common.CurrentService)
+	}
+
+	id, err := casting.StringToUint(param)
+	if err != nil {
+		log.Warn(c, "invalid param %s, err:[%s]", key, err)
+		return 0, common.ErrBadRequest(c).SetDetail(fmt.Sprintf("invalid param %s", key)).SetSource(common.CurrentService)
+	}
+	return id, nil
+}
+
+func (b *baseController) GetFile(c *gin.Context, key string) (*multipart.FileHeader, *common.Error) {
+	file, err := c.FormFile(key)
+	if err != nil {
+		log.Warn(c, "get file %s err, err:[%s]", key, err)
+		return nil, common.ErrBadRequest(c).SetDetail(fmt.Sprintf("file %s is required", key)).SetSource(common.CurrentService)
+	}
+	return file, nil
 }
 
 func (b *baseController) BindAndValidateRequest(c *gin.Context, req interface{}) *common.Error {

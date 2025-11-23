@@ -135,6 +135,17 @@ var (
 		}
 	}
 
+	ErrConflict = func(ctx context.Context, object, status string) *Error {
+		traceId := GetTraceId(ctx)
+		return &Error{
+			Code:       ErrorCodeConflict,
+			Message:    getMsg(object, status),
+			TraceID:    traceId,
+			HTTPStatus: http.StatusConflict,
+			Source:     CurrentService,
+		}
+	}
+
 	// Status 5xx *******
 
 	ErrSystemError = func(ctx context.Context, detail string) *Error {
