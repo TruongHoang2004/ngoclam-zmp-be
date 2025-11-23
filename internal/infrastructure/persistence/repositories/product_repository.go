@@ -133,45 +133,45 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 	}
 
 	// Collect all product IDs
-	ids := make([]uint, 0, len(products))
-	for _, p := range products {
-		if p != nil {
-			ids = append(ids, p.ID)
-		}
-	}
+	// ids := make([]uint, 0, len(products))
+	// for _, p := range products {
+	// 	if p != nil {
+	// 		ids = append(ids, p.ID)
+	// 	}
+	// }
 
-	imageMap := make(map[uint][]domain.ProductImage)
-	if len(ids) > 0 {
-		var productImages []*model.ProductImage
-		if err := r.db.WithContext(ctx).
-			Where("product_id IN ? AND is_main = ?", ids, true).
-			Preload("Image").
-			Preload("Variant").
-			Find(&productImages).Error; err != nil {
-			return nil, 0, r.returnError(ctx, err)
-		}
+	// imageMap := make(map[uint][]domain.ProductImage)
+	// if len(ids) > 0 {
+	// 	var productImages []*model.ProductImage
+	// 	if err := r.db.WithContext(ctx).
+	// 		Where("product_id IN ? AND is_main = ?", ids, true).
+	// 		Preload("Image").
+	// 		Preload("Variant").
+	// 		Find(&productImages).Error; err != nil {
+	// 		return nil, 0, r.returnError(ctx, err)
+	// 	}
 
-		for _, img := range productImages {
-			if img == nil {
-				continue
-			}
-			// keep only one main image per product
-			if _, exists := imageMap[img.ProductID]; exists {
-				continue
-			}
-			if d := domain.NewProductImageFromModel(img); d != nil {
-				imageMap[img.ProductID] = []domain.ProductImage{*d}
-			}
-		}
-	}
+	// 	for _, img := range productImages {
+	// 		if img == nil {
+	// 			continue
+	// 		}
+	// 		// keep only one main image per product
+	// 		if _, exists := imageMap[img.ProductID]; exists {
+	// 			continue
+	// 		}
+	// 		if d := domain.NewProductImageFromModel(img); d != nil {
+	// 			imageMap[img.ProductID] = []domain.ProductImage{*d}
+	// 		}
+	// 	}
+	// }
 
 	// Build final domain products
 	result := make([]*domain.Product, len(products))
 	for i, p := range products {
 		domainProd := domain.NewProductFromModel(p)
-		if imgs, ok := imageMap[p.ID]; ok && len(imgs) > 0 {
-			domainProd.Images = &imgs
-		}
+		// if imgs, ok := imageMap[p.ID]; ok && len(imgs) > 0 {
+		// 	domainProd.Images = &imgs
+		// }
 		result[i] = domainProd
 	}
 

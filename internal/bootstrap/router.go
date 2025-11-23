@@ -1,17 +1,26 @@
 package bootstrap
 
 import (
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/controllers"
 	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 )
 
-func registerRoutes(r *gin.RouterGroup, config *config.Config) {
+func registerRoutes(
+	r *gin.RouterGroup,
+	imageController *controllers.ImageController,
+	folderController *controllers.FolderController,
+	productController *controllers.ProductController,
+) {
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
 	})
+
+	imageController.RegisterRoutes(r)
+	folderController.RegisterRoutes(r)
+	productController.RegisterRoutes(r)
 }
 
 var RouterModule = fx.Options(

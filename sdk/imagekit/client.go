@@ -33,20 +33,20 @@ type TransformationOptions struct {
 	Post string
 }
 
-func NewImageKitClient(cfg *config.Config) (*ImageKitClient, error) {
-	if cfg.ImageKitPrivateKey == "" || cfg.ImageKitPublicKey == "" || cfg.ImageKitEndpoint == "" {
-		return nil, fmt.Errorf("imagekit configuration is incomplete")
+func NewImageKitClient() *ImageKitClient {
+	if config.AppConfig.ImageKitPrivateKey == "" || config.AppConfig.ImageKitPublicKey == "" || config.AppConfig.ImageKitEndpoint == "" {
+		return nil
 	}
 
 	ik := imagekit.NewFromParams(imagekit.NewParams{
-		PrivateKey:  cfg.ImageKitPrivateKey,
-		PublicKey:   cfg.ImageKitPublicKey,
-		UrlEndpoint: cfg.ImageKitEndpoint,
+		PrivateKey:  config.AppConfig.ImageKitPrivateKey,
+		PublicKey:   config.AppConfig.ImageKitPublicKey,
+		UrlEndpoint: config.AppConfig.ImageKitEndpoint,
 	})
 
 	return &ImageKitClient{
 		client: ik,
-	}, nil
+	}
 }
 
 // UploadImage uploads an image file with validation. This is the recommended method for image uploads.

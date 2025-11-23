@@ -24,7 +24,7 @@ func CustomLevelEncoder(level zapcore.Level, enc zapcore.PrimitiveArrayEncoder) 
 	enc.AppendString("[" + level.CapitalString() + "]")
 }
 
-func NewLogger(appConfig *config.Config) {
+func NewLogger() {
 	encoderConfig := zapcore.EncoderConfig{
 		MessageKey:   "message",
 		LevelKey:     "level",
@@ -49,7 +49,6 @@ func NewLogger(appConfig *config.Config) {
 	globalLogger = &logger{
 		zap: zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel), zap.AddCallerSkip(callerSkip)).Sugar(),
 	}
-	return
 }
 
 func (l *logger) Info(msg string, args ...interface{}) {

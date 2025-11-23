@@ -9,9 +9,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewDatabase(config *config.Config) (*gorm.DB, error) {
-	log.Printf("🔌 Connecting to database %s", config.DBUrl)
-	db, err := gorm.Open(postgres.Open(config.DBUrl), &gorm.Config{})
+func NewDatabase() (*gorm.DB, error) {
+	log.Printf("🔌 Connecting to database %s", config.AppConfig.DBUrl)
+	db, err := gorm.Open(postgres.Open(config.AppConfig.DBUrl), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect database: %w", err)
 	}

@@ -5,22 +5,26 @@ import (
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/database"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
-var DatabaseModule = fx.Module("database",
-	fx.Provide(database.NewDatabase),
+func BuildDatabase() fx.Option {
+	return fx.Module("database",
+		fx.Provide(database.NewDatabase),
 
-	// đảm bảo close connection khi app stop
-	fx.Invoke(func(lc fx.Lifecycle, db *gorm.DB) {
-		lc.Append(fx.Hook{
-			OnStop: func(ctx context.Context) error {
-				sqlDB, err := db.DB()
-				if err != nil {
-					return err
-				}
-				return sqlDB.Close()
-			},
-		})
-	}),
-)
+		fx.Invoke(func(lc fx.Lifecycle, db *gorm.DB, log *zap.SugaredLogger) {
+			lc.Append(fx.Hook{
+				OnStop: func(ctx context.Context) error {
+					log.Info("Closing database connection")
+					sqlDB, err := db.DB()
+					if err != nil {
+						return err
+					}
+
+					return sqlDB.Close()
+				},
+			})
+		}),
+	)
+}
