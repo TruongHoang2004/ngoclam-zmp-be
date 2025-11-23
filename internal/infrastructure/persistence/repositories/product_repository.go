@@ -1,30 +1,31 @@
-package repository
+package repositories
 
 import (
 	"context"
 	"errors"
 
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 	"gorm.io/gorm"
 )
 
 type ProductRepository struct {
-	db *gorm.DB
+	*baseRepository
 }
 
-func NewProductRepository(db *gorm.DB) *ProductRepository {
-	return &ProductRepository{db: db}
+func NewProductRepository(base *baseRepository) *ProductRepository {
+	return &ProductRepository{baseRepository: base}
 }
 
 // CreateProduct creates a new product (variants should be added separately)
-func (r *ProductRepository) CreateProduct(ctx context.Context, product *domain.Product) error {
+func (r *ProductRepository) CreateProduct(ctx context.Context, product *domain.Product) *common.Error {
 	m := &model.Product{
 		Name:        product.Name,
 		Description: product.Description,
 		Price:       product.Price,
 	}
-	return r.db.WithContext(ctx).Create(m).Error
+	return r.returnError(ctx, r.db.WithContext(ctx).Create(m).Error)
 }
 
 // IsExistProduct checks if a product with the same name already exists
@@ -319,9 +320,8 @@ func (r *ProductRepository) UpdateProductImage(ctx context.Context, img *domain.
 		if err := tx.Model(&model.ProductImage{}).
 			Where("id = ?", record.ID).
 			Updates(map[string]interface{}{
-				"variant_id": record.VariantID,
-				"order":      record.Order,
-				"is_main":    record.IsMain,
+				"order":   record.Order,
+				"is_main": record.IsMain,
 			}).Error; err != nil {
 			return err
 		}

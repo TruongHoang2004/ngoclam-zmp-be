@@ -1,20 +1,22 @@
-package controller
+package controllers
 
 import (
 	"fmt"
 	"net/http"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils/casting"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/service"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
 type FolderController struct {
-	folderService *service.FolderService
+	*baseController
+	folderService *services.FolderService
 }
 
-func NewFolderController(folderService *service.FolderService) *FolderController {
+func NewFolderController(folderService *services.FolderService) *FolderController {
 	return &FolderController{folderService: folderService}
 }
 
@@ -31,14 +33,14 @@ func (c *FolderController) RegisterRoutes(r *gin.RouterGroup) {
 
 func (c *FolderController) CreateFolder(ctx *gin.Context) {
 	var req dto.CreateFolderRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	if err := c.BindAndValidateRequest(ctx, req); err != nil {
+		c.ErrorData(ctx, err)
 		return
 	}
 
 	f, err := c.folderService.CreateFolder(ctx.Request.Context(), req.Name, req.Description)
 	if err != nil {
-		ctx.Error(err)
+		c.ErrorData(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, dto.NewFolderResponse(f))
@@ -46,10 +48,9 @@ func (c *FolderController) CreateFolder(ctx *gin.Context) {
 
 func (c *FolderController) GetFolderByID(ctx *gin.Context) {
 	idParam := ctx.Param("id")
-	var id uint
-	_, err := fmt.Sscanf(idParam, "%d", &id)
+	id, err := casting.StringToUint(idParam)
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetDetail("Invalid ID format"))
 		return
 	}
 

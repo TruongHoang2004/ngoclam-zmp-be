@@ -1,35 +1,42 @@
-package repository
+package repositories
 
 import (
 	"context"
+	"errors"
 
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type FolderRepository struct {
-	db *gorm.DB
+	*baseRepository
 }
 
-func NewFolderRepository(db *gorm.DB) *FolderRepository {
-	return &FolderRepository{db: db}
+func NewFolderRepository(base *baseRepository) *FolderRepository {
+	return &FolderRepository{baseRepository: base}
 }
 
-func (r *FolderRepository) CreateFolder(ctx context.Context, folder *domain.Folder) error {
+func (r *FolderRepository) CreateFolder(ctx context.Context, folder *domain.Folder) *common.Error {
 	f := &model.Folder{
 		ID:          folder.ID,
 		Name:        folder.Name,
 		Description: folder.Description,
 	}
 
-	return r.db.WithContext(ctx).Create(f).Error
+	return r.returnError(ctx, r.db.WithContext(ctx).Create(f).Error)
 }
 
-func (r *FolderRepository) GetFolderByID(ctx context.Context, id uint) (*domain.Folder, error) {
-	var folder *model.Folder
-	if err := r.db.WithContext(ctx).First(&folder, id).Error; err != nil {
-		return nil, err
+func (r *FolderRepository) GetFolderByID(ctx context.Context, id uint) (*domain.Folder, *common.Error) {
+	folder := &model.Folder{}
+	cond := clause.Eq{Column: "id", Value: id}
+
+	if err := r.db.Clauses(cond).Take(folder).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, common.ErrNotFound(ctx, "folder", "not found").SetSource(common.CurrentService)
+		}
 	}
 	return domain.NewFolderDomain(folder), nil
 }

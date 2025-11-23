@@ -7,6 +7,7 @@ toolchain go1.24.7
 require (
 	ariga.io/atlas-provider-gorm v0.6.0
 	github.com/gin-gonic/gin v1.10.1
+	github.com/shopspring/decimal v1.4.0
 	go.uber.org/fx v1.24.0
 	go.uber.org/zap v1.26.0
 	gorm.io/gorm v1.30.1

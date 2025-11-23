@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"context"
@@ -6,16 +6,16 @@ import (
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repository"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repositories"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 )
 
 type ProductService struct {
-	productRepository *repository.ProductRepository
-	imageRepository   *repository.ImageRepository
+	productRepository *repositories.ProductRepository
+	imageRepository   *repositories.ImageRepository
 }
 
-func NewProductService(productRepo *repository.ProductRepository, imageRepo *repository.ImageRepository) *ProductService {
+func NewProductService(productRepo *repositories.ProductRepository, imageRepo *repositories.ImageRepository) *ProductService {
 	return &ProductService{
 		productRepository: productRepo,
 		imageRepository:   imageRepo,

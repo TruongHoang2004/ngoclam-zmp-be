@@ -123,22 +123,6 @@ func NewProductImageFromModel(m *model.ProductImage) *ProductImage {
 		UpdatedAt: m.UpdatedAt,
 	}
 
-	if m.Image.ID != 0 {
-		pi.Image = NewImageDomain(&m.Image)
-	}
-
-	if m.Variant != nil && m.Variant.ID != 0 {
-		pi.Variant = &ProductVariant{
-			ID:        m.Variant.ID,
-			ProductID: m.Variant.ProductID,
-			Name:      m.Variant.Name,
-			Stock:     m.Variant.Stock,
-			Price:     m.Variant.Price,
-			CreatedAt: m.Variant.CreatedAt,
-			UpdatedAt: m.Variant.UpdatedAt,
-		}
-	}
-
 	return pi
 }
 
@@ -146,7 +130,6 @@ func (pi *ProductImage) ToModel() *model.ProductImage {
 	return &model.ProductImage{
 		ID:        pi.ID,
 		ProductID: pi.ProductID,
-		VariantID: pi.VariantID,
 		ImageID:   pi.ImageID,
 		Order:     pi.Order,
 		IsMain:    pi.IsMain,

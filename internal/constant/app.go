@@ -5,4 +5,5 @@ const (
 	AppEnvProd = "production"
 
 	TraceIdName = "trace_id"
+	ServiceName = "API_Service"
 )

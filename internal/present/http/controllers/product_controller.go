@@ -1,17 +1,17 @@
-package controller
+package controllers
 
 import (
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/service"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
 type ProductController struct {
-	productService *service.ProductService
+	productService *services.ProductService
 }
 
-func NewProductController(productService *service.ProductService) *ProductController {
+func NewProductController(productService *services.ProductService) *ProductController {
 	return &ProductController{
 		productService: productService,
 	}

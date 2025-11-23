@@ -34,11 +34,11 @@ func (b *baseController) ErrorData(c *gin.Context, err *common.Error) {
 func (b *baseController) BindAndValidateRequest(c *gin.Context, req interface{}) *common.Error {
 	if err := c.BindUri(req); err != nil {
 		log.Warn(c, "bind request err, err:[%s]", err)
-		return common.ErrBadRequest(c).SetDetail(err.Error())
+		return common.ErrBadRequest(c).SetDetail(err.Error()).SetSource(common.CurrentService)
 	}
 	if err := c.Bind(req); err != nil {
 		log.Warn(c, "bind request err, err:[%s]", err)
-		return common.ErrBadRequest(c).SetDetail(err.Error())
+		return common.ErrBadRequest(c).SetDetail(err.Error()).SetSource(common.CurrentService)
 	}
 	return b.ValidateRequest(c, req)
 }
@@ -50,7 +50,7 @@ func (b *baseController) ValidateRequest(ctx context.Context, req interface{}) *
 		errs, ok := err.(validator.ValidationErrors)
 		if !ok {
 			log.Error(ctx, "Cannot parse validate error: %+v", err)
-			return common.ErrSystemError(ctx, "ValidateFailed").SetDetail(err.Error())
+			return common.ErrSystemError(ctx, "ValidateFailed").SetDetail(err.Error()).SetSource(common.CurrentService)
 		}
 		var filedErrors []string
 		for _, errValidate := range errs {
@@ -59,7 +59,7 @@ func (b *baseController) ValidateRequest(ctx context.Context, req interface{}) *
 		}
 		str := strings.Join(filedErrors, ",")
 		log.Warn(ctx, "invalid request, err:[%s]", err.Error())
-		return common.ErrBadRequest(ctx).SetDetail(fmt.Sprintf("field invalidate [%s]", str))
+		return common.ErrBadRequest(ctx).SetDetail(fmt.Sprintf("field invalidate [%s]", str)).SetSource(common.CurrentService)
 	}
 	return nil
 }

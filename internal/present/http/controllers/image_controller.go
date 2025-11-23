@@ -1,4 +1,4 @@
-package controller
+package controllers
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/service"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
 type ImageController struct {
-	imageService *service.ImageService
+	imageService *services.ImageService
 }
 
-func NewImageController(imageService *service.ImageService) *ImageController {
+func NewImageController(imageService *services.ImageService) *ImageController {
 	return &ImageController{
 		imageService: imageService,
 	}

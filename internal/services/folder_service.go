@@ -1,21 +1,22 @@
-package service
+package services
 
 import (
 	"context"
 
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repository"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repositories"
 )
 
 type FolderService struct {
-	repo *repository.FolderRepository
+	repo *repositories.FolderRepository
 }
 
-func NewFolderService(repo *repository.FolderRepository) *FolderService {
+func NewFolderService(repo *repositories.FolderRepository) *FolderService {
 	return &FolderService{repo: repo}
 }
 
-func (s *FolderService) CreateFolder(ctx context.Context, name string, description string) (*domain.Folder, error) {
+func (s *FolderService) CreateFolder(ctx context.Context, name string, description string) (*domain.Folder, *common.Error) {
 	f := &domain.Folder{
 		Name:        name,
 		Description: description,

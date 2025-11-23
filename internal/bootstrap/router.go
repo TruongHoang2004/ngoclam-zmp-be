@@ -1,4 +1,4 @@
-package module
+package bootstrap
 
 import (
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"

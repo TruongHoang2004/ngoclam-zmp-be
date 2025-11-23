@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/constant"
 )
 
 type CodeResponse int
@@ -32,7 +34,7 @@ const (
 type Source string
 
 const (
-	SourceAPIService Source = "API_Service"
+	CurrentService Source = constant.ServiceName
 )
 
 type Error struct {
@@ -107,7 +109,7 @@ var (
 			Code:       ErrorCodeUnauthorized,
 			Message:    DefaultUnauthorizedMessage,
 			TraceID:    traceId,
-			Source:     SourceAPIService,
+			Source:     CurrentService,
 			HTTPStatus: http.StatusUnauthorized,
 		}
 	}
@@ -129,7 +131,7 @@ var (
 			Message:    DefaultBadRequestMessage,
 			TraceID:    traceId,
 			HTTPStatus: http.StatusBadRequest,
-			Source:     SourceAPIService,
+			Source:     CurrentService,
 		}
 	}
 
@@ -142,7 +144,7 @@ var (
 			Message:    DefaultServerErrorMessage,
 			TraceID:    traceId,
 			HTTPStatus: http.StatusInternalServerError,
-			Source:     SourceAPIService,
+			Source:     CurrentService,
 			Detail:     detail,
 		}
 	}
@@ -154,7 +156,7 @@ var (
 			Message:    DefaultForbiddenMessage,
 			TraceID:    traceId,
 			HTTPStatus: http.StatusForbidden,
-			Source:     SourceAPIService,
+			Source:     CurrentService,
 		}
 	}
 )

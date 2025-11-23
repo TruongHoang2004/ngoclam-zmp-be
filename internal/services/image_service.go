@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"context"
@@ -6,14 +6,14 @@ import (
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repository"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repositories"
 )
 
 type ImageService struct {
-	imageRepository *repository.ImageRepository
+	imageRepository *repositories.ImageRepository
 }
 
-func NewImageService(imageRepo *repository.ImageRepository) *ImageService {
+func NewImageService(imageRepo *repositories.ImageRepository) *ImageService {
 	return &ImageService{
 		imageRepository: imageRepo,
 	}
