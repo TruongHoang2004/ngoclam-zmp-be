@@ -61,24 +61,24 @@ func (s *ProductService) CreateProduct(ctx context.Context, product *dto.CreateP
 	return s.productRepository.CreateProduct(ctx, domainProduct)
 }
 
-func (s *ProductService) GetProductByID(ctx context.Context, id uint) (*domain.Product, error) {
+func (s *ProductService) GetProductByID(ctx context.Context, id uint) (*domain.Product, *common.Error) {
 	product, err := s.productRepository.GetProductDetailByID(ctx, id)
 	if err != nil {
-		return nil, common.NotFound("Product not found")
+		return nil, err
 	}
 
 	return product, nil
 }
 
-func (s *ProductService) ListProducts(ctx context.Context, page int, size int) ([]*domain.Product, int64, error) {
+func (s *ProductService) ListProducts(ctx context.Context, page int, size int) ([]*domain.Product, int64, *common.Error) {
 	offset := (page - 1) * size
 	return s.productRepository.ListProducts(ctx, offset, size)
 }
 
-func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateProductRequest) error {
+func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateProductRequest) *common.Error {
 	productdomain, err := s.productRepository.GetProductByID(ctx, product.ID)
 	if err != nil {
-		return common.NotFound("Product not found")
+		return common.ErrNotFound(ctx, "Product", "not found")
 	}
 
 	if product.Name != nil {
@@ -94,19 +94,19 @@ func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateP
 	return s.productRepository.UpdateProduct(ctx, productdomain)
 }
 
-func (s *ProductService) DeleteProduct(ctx context.Context, id uint) error {
+func (s *ProductService) DeleteProduct(ctx context.Context, id uint) *common.Error {
 	productdomain, err := s.productRepository.GetProductByID(ctx, id)
 	if err != nil {
-		return common.NotFound("Product not found")
+		return err
 	}
 
 	return s.productRepository.DeleteProduct(ctx, productdomain.ID)
 }
 
-func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.AddProductVariantRequest) error {
+func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.AddProductVariantRequest) *common.Error {
 	product, err := s.productRepository.GetProductByID(ctx, variant.ProductID)
 	if product == nil {
-		return common.NotFound("Product not found")
+		return common.ErrNotFound(ctx, "Product", "not found")
 	}
 	if err != nil {
 		return err
@@ -124,17 +124,17 @@ func (s *ProductService) AddProductVariant(ctx context.Context, variant *dto.Add
 		return err
 	}
 	if existed {
-		return common.Conflict("Product variant already exists")
+		return common.ErrConflict(ctx, "Product variant", "already exists")
 	}
 
 	return s.productRepository.AddProductVariant(ctx, variantdomain)
 }
 
-func (s *ProductService) UpdateProductVariant(ctx context.Context, variant *dto.UpdateProductVariantRequest) error {
+func (s *ProductService) UpdateProductVariant(ctx context.Context, variant *dto.UpdateProductVariantRequest) *common.Error {
 
-	variantdomain := s.productRepository.GetProductVariantByID(ctx, variant.ID)
-	if variantdomain == nil {
-		return common.NotFound("Product variant not found")
+	variantdomain, err := s.productRepository.GetProductVariantByID(ctx, variant.ID)
+	if err != nil {
+		return err
 	}
 
 	if variant.Name != nil {
@@ -150,44 +150,32 @@ func (s *ProductService) UpdateProductVariant(ctx context.Context, variant *dto.
 	return s.productRepository.UpdateProductVariant(ctx, variantdomain)
 }
 
-func (s *ProductService) DeleteProductVariant(ctx context.Context, id uint) error {
-	variantdomain := s.productRepository.GetProductVariantByID(ctx, id)
-	if variantdomain == nil {
-		return common.NotFound("Product variant not found")
+func (s *ProductService) DeleteProductVariant(ctx context.Context, id uint) *common.Error {
+	variantdomain, err := s.productRepository.GetProductVariantByID(ctx, id)
+	if err != nil {
+		return err
 	}
 
 	return s.productRepository.DeleteProductVariant(ctx, variantdomain.ID)
 }
 
-func (s *ProductService) ListProductImages(ctx context.Context, productID uint) ([]*domain.ProductImage, error) {
+func (s *ProductService) ListProductImages(ctx context.Context, productID uint) ([]*domain.ProductImage, *common.Error) {
 	_, err := s.productRepository.GetProductByID(ctx, productID)
 	if err != nil {
-		return nil, common.NotFound("Product not found")
+		return nil, err
 	}
 	return s.productRepository.ListProductImages(ctx, productID)
 }
 
-func (s *ProductService) AddProductImage(ctx context.Context, productID uint, req *dto.AttachProductImageRequest) (*domain.ProductImage, error) {
+func (s *ProductService) AddProductImage(ctx context.Context, productID uint, req *dto.AttachProductImageRequest) (*domain.ProductImage, *common.Error) {
 	_, err := s.productRepository.GetProductByID(ctx, productID)
-	if err != nil {
-		return nil, common.NotFound("Product not found")
-	}
-
-	imageModel, err := s.imageRepository.GetImageByID(ctx, req.ImageID)
 	if err != nil {
 		return nil, err
 	}
-	if imageModel == nil {
-		return nil, common.NotFound("Image not found")
-	}
 
-	var variantID *uint
-	if req.VariantID != nil {
-		variant := s.productRepository.GetProductVariantByID(ctx, *req.VariantID)
-		if variant == nil || variant.ProductID != productID {
-			return nil, common.BadRequest("Variant does not belong to product", nil)
-		}
-		variantID = req.VariantID
+	_, err = s.imageRepository.GetImageByID(ctx, req.ImageID)
+	if err != nil {
+		return nil, err
 	}
 
 	order := 0
@@ -198,7 +186,6 @@ func (s *ProductService) AddProductImage(ctx context.Context, productID uint, re
 	productImage := &domain.ProductImage{
 		ProductID: productID,
 		ImageID:   req.ImageID,
-		VariantID: variantID,
 		Order:     order,
 		IsMain:    req.IsMain,
 	}
@@ -206,26 +193,10 @@ func (s *ProductService) AddProductImage(ctx context.Context, productID uint, re
 	return s.productRepository.AddProductImage(ctx, productImage)
 }
 
-func (s *ProductService) UpdateProductImage(ctx context.Context, productID uint, productImageID uint, req *dto.UpdateProductImageRequest) (*domain.ProductImage, error) {
+func (s *ProductService) UpdateProductImage(ctx context.Context, productID uint, productImageID uint, req *dto.UpdateProductImageRequest) (*domain.ProductImage, *common.Error) {
 	productImage, err := s.productRepository.GetProductImageByID(ctx, productImageID)
 	if err != nil {
 		return nil, err
-	}
-	if productImage == nil || productImage.ProductID != productID {
-		return nil, common.NotFound("Product image not found")
-	}
-
-	if req.VariantID != nil {
-		if *req.VariantID == 0 {
-			productImage.VariantID = nil
-			productImage.Variant = nil
-		} else {
-			variant := s.productRepository.GetProductVariantByID(ctx, *req.VariantID)
-			if variant == nil || variant.ProductID != productID {
-				return nil, common.BadRequest("Variant does not belong to product", nil)
-			}
-			productImage.VariantID = req.VariantID
-		}
 	}
 
 	if req.Order != nil {
@@ -239,13 +210,13 @@ func (s *ProductService) UpdateProductImage(ctx context.Context, productID uint,
 	return s.productRepository.UpdateProductImage(ctx, productImage)
 }
 
-func (s *ProductService) DeleteProductImage(ctx context.Context, productID uint, productImageID uint) error {
+func (s *ProductService) DeleteProductImage(ctx context.Context, productID uint, productImageID uint) *common.Error {
 	productImage, err := s.productRepository.GetProductImageByID(ctx, productImageID)
 	if err != nil {
 		return err
 	}
 	if productImage == nil || productImage.ProductID != productID {
-		return common.NotFound("Product image not found")
+		return common.ErrNotFound(ctx, "Image", "not found")
 	}
 
 	return s.productRepository.DeleteProductImage(ctx, productImageID)

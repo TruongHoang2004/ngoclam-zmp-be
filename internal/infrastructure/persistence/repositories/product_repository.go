@@ -50,14 +50,25 @@ func (r *ProductRepository) IsExistProduct(ctx context.Context, name string) (bo
 	return count > 0, nil
 }
 
-func (r *ProductRepository) GetProductByID(ctx context.Context, id uint) (*domain.Product, error) {
-	return r.GetProductDetailByID(ctx, id)
+func (r *ProductRepository) GetProductByID(ctx context.Context, id uint) (*domain.Product, *common.Error) {
+	product, err := r.GetProductDetailByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, common.ErrNotFound(ctx, "Product", "not found")
+		}
+		return nil, err
+	}
+
+	return product, nil
 }
 
-func (r *ProductRepository) GetProductSummaryByID(ctx context.Context, id uint) (*domain.Product, error) {
+func (r *ProductRepository) GetProductSummaryByID(ctx context.Context, id uint) (*domain.Product, *common.Error) {
 	var prod model.Product
 	if err := r.db.WithContext(ctx).First(&prod, id).Error; err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, common.ErrNotFound(ctx, "Product", "not found")
+		}
+		return nil, r.returnError(ctx, err)
 	}
 
 	domainProd := domain.NewProductFromModel(&prod)
@@ -71,7 +82,7 @@ func (r *ProductRepository) GetProductSummaryByID(ctx context.Context, id uint) 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domainProd, nil
 		}
-		return nil, err
+		return nil, r.returnError(ctx, err)
 	}
 
 	domainProd.SetImages([]*model.ProductImage{&img})
@@ -80,19 +91,22 @@ func (r *ProductRepository) GetProductSummaryByID(ctx context.Context, id uint) 
 }
 
 // GetProductDetailByID fetches product + manually loads variants if requested
-func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint) (*domain.Product, error) {
+func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint) (*domain.Product, *common.Error) {
 	var prod model.Product
 	if err := r.db.WithContext(ctx).First(&prod, id).Error; err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, common.ErrNotFound(ctx, "Product", "not found")
+		}
+		return nil, r.returnError(ctx, err)
 	}
 
 	domainProd := domain.NewProductFromModel(&prod)
 
 	variants, err := r.loadVariantsByProductID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, r.returnError(ctx, err)
 	}
-	domainProd.Variants = &variants
+	domainProd.Variants = variants
 
 	images, err := r.loadProductImagesByProductID(ctx, id)
 	if err != nil {
@@ -104,10 +118,10 @@ func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint) (
 }
 
 // ListProducts with pagination, always includes variants
-func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int) ([]*domain.Product, int64, error) {
+func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int) ([]*domain.Product, int64, *common.Error) {
 	var total int64
 	if err := r.db.WithContext(ctx).Model(&model.Product{}).Count(&total).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, r.returnError(ctx, err)
 	}
 
 	var products []*model.Product
@@ -115,7 +129,7 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 		Offset(offset).
 		Limit(limit).
 		Find(&products).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, r.returnError(ctx, err)
 	}
 
 	// Collect all product IDs
@@ -134,7 +148,7 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 			Preload("Image").
 			Preload("Variant").
 			Find(&productImages).Error; err != nil {
-			return nil, 0, err
+			return nil, 0, r.returnError(ctx, err)
 		}
 
 		for _, img := range productImages {
@@ -165,26 +179,37 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 }
 
 // UpdateProduct updates only product fields (not variants)
-func (r *ProductRepository) UpdateProduct(ctx context.Context, product *domain.Product) error {
+func (r *ProductRepository) UpdateProduct(ctx context.Context, product *domain.Product) *common.Error {
 	m := &model.Product{
 		ID:          product.ID,
 		Name:        product.Name,
 		Description: product.Description,
 		Price:       product.Price,
 	}
-	return r.db.WithContext(ctx).Model(m).Updates(m).Error
+	err := r.db.WithContext(ctx).Model(m).Updates(m).Error
+	if err != nil {
+		return r.returnError(ctx, err)
+	}
+	return nil
 }
 
-func (r *ProductRepository) DeleteProduct(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&model.Product{}, id).Error
+func (r *ProductRepository) DeleteProduct(ctx context.Context, id uint) *common.Error {
+	err := r.db.WithContext(ctx).Delete(&model.Product{}, id).Error
+	if err != nil {
+		return r.returnError(ctx, err)
+	}
+	return nil
 }
 
 // === Product Variant Methods ===
 
-func (r *ProductRepository) GetProductVariantByID(ctx context.Context, id uint) *domain.ProductVariant {
+func (r *ProductRepository) GetProductVariantByID(ctx context.Context, id uint) (*domain.ProductVariant, *common.Error) {
 	var v model.ProductVariant
 	if err := r.db.WithContext(ctx).First(&v, id).Error; err != nil {
-		return nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, common.ErrNotFound(ctx, "Product variant", "not found").SetSource(common.CurrentService)
+		}
+		return nil, r.returnError(ctx, err)
 	}
 	return &domain.ProductVariant{
 		ID:        v.ID,
@@ -194,20 +219,24 @@ func (r *ProductRepository) GetProductVariantByID(ctx context.Context, id uint) 
 		Price:     v.Price,
 		CreatedAt: v.CreatedAt,
 		UpdatedAt: v.UpdatedAt,
-	}
+	}, nil
 }
 
-func (r *ProductRepository) AddProductVariant(ctx context.Context, variant *domain.ProductVariant) error {
+func (r *ProductRepository) AddProductVariant(ctx context.Context, variant *domain.ProductVariant) *common.Error {
 	m := &model.ProductVariant{
 		ProductID: variant.ProductID,
 		Name:      variant.Name,
 		Stock:     variant.Stock,
 		Price:     variant.Price,
 	}
-	return r.db.WithContext(ctx).Create(m).Error
+	err := r.db.WithContext(ctx).Create(m).Error
+	if err != nil {
+		return r.returnError(ctx, err)
+	}
+	return nil
 }
 
-func (r *ProductRepository) UpdateProductVariant(ctx context.Context, variant *domain.ProductVariant) error {
+func (r *ProductRepository) UpdateProductVariant(ctx context.Context, variant *domain.ProductVariant) *common.Error {
 	m := &model.ProductVariant{
 		ID:        variant.ID,
 		ProductID: variant.ProductID,
@@ -215,30 +244,38 @@ func (r *ProductRepository) UpdateProductVariant(ctx context.Context, variant *d
 		Stock:     variant.Stock,
 		Price:     variant.Price,
 	}
-	return r.db.WithContext(ctx).Model(m).Updates(m).Error
+	err := r.db.WithContext(ctx).Model(m).Updates(m).Error
+	if err != nil {
+		return r.returnError(ctx, err)
+	}
+	return nil
 }
 
-func (r *ProductRepository) DeleteProductVariant(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&model.ProductVariant{}, id).Error
+func (r *ProductRepository) DeleteProductVariant(ctx context.Context, id uint) *common.Error {
+	err := r.db.WithContext(ctx).Delete(&model.ProductVariant{}, id).Error
+	if err != nil {
+		return r.returnError(ctx, err)
+	}
+	return nil
 }
 
-func (r *ProductRepository) IsExistProductVariant(ctx context.Context, productID uint, name string) (bool, error) {
+func (r *ProductRepository) IsExistProductVariant(ctx context.Context, productID uint, name string) (bool, *common.Error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&model.ProductVariant{}).
 		Where("product_id = ? AND name = ?", productID, name).
 		Count(&count).Error
 	if err != nil {
-		return false, err
+		return false, r.returnError(ctx, err)
 	}
 	return count > 0, nil
 }
 
 // Helper: load variants for a single product
-func (r *ProductRepository) loadVariantsByProductID(ctx context.Context, productID uint) ([]domain.ProductVariant, error) {
+func (r *ProductRepository) loadVariantsByProductID(ctx context.Context, productID uint) (*[]domain.ProductVariant, *common.Error) {
 	var variants []model.ProductVariant
 	if err := r.db.WithContext(ctx).Where("product_id = ?", productID).Find(&variants).Error; err != nil {
-		return nil, err
+		return nil, r.returnError(ctx, err)
 	}
 
 	result := make([]domain.ProductVariant, len(variants))
@@ -253,12 +290,12 @@ func (r *ProductRepository) loadVariantsByProductID(ctx context.Context, product
 			UpdatedAt: v.UpdatedAt,
 		}
 	}
-	return result, nil
+	return &result, nil
 }
 
 // === Product Image Methods ===
 
-func (r *ProductRepository) ListProductImages(ctx context.Context, productID uint) ([]*domain.ProductImage, error) {
+func (r *ProductRepository) ListProductImages(ctx context.Context, productID uint) ([]*domain.ProductImage, *common.Error) {
 	images, err := r.loadProductImagesByProductID(ctx, productID)
 	if err != nil {
 		return nil, err
@@ -276,21 +313,21 @@ func (r *ProductRepository) ListProductImages(ctx context.Context, productID uin
 	return result, nil
 }
 
-func (r *ProductRepository) GetProductImageByID(ctx context.Context, id uint) (*domain.ProductImage, error) {
+func (r *ProductRepository) GetProductImageByID(ctx context.Context, id uint) (*domain.ProductImage, *common.Error) {
 	var record model.ProductImage
 	if err := r.db.WithContext(ctx).
 		Preload("Image").
 		Preload("Variant").
 		First(&record, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, common.ErrNotFound(ctx, "Image", "not found").SetSource(common.CurrentService)
 		}
-		return nil, err
+		return nil, r.returnError(ctx, err)
 	}
 	return domain.NewProductImageFromModel(&record), nil
 }
 
-func (r *ProductRepository) AddProductImage(ctx context.Context, img *domain.ProductImage) (*domain.ProductImage, error) {
+func (r *ProductRepository) AddProductImage(ctx context.Context, img *domain.ProductImage) (*domain.ProductImage, *common.Error) {
 	record := img.ToModel()
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if record.IsMain {
@@ -310,12 +347,12 @@ func (r *ProductRepository) AddProductImage(ctx context.Context, img *domain.Pro
 			First(record, record.ID).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, r.returnError(ctx, err)
 	}
 	return domain.NewProductImageFromModel(record), nil
 }
 
-func (r *ProductRepository) UpdateProductImage(ctx context.Context, img *domain.ProductImage) (*domain.ProductImage, error) {
+func (r *ProductRepository) UpdateProductImage(ctx context.Context, img *domain.ProductImage) (*domain.ProductImage, *common.Error) {
 	record := img.ToModel()
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if record.IsMain {
@@ -340,16 +377,20 @@ func (r *ProductRepository) UpdateProductImage(ctx context.Context, img *domain.
 			First(record, record.ID).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, r.returnError(ctx, err)
 	}
 	return domain.NewProductImageFromModel(record), nil
 }
 
-func (r *ProductRepository) DeleteProductImage(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&model.ProductImage{}, id).Error
+func (r *ProductRepository) DeleteProductImage(ctx context.Context, id uint) *common.Error {
+	err := r.db.WithContext(ctx).Delete(&model.ProductImage{}, id).Error
+	if err != nil {
+		return r.returnError(ctx, err)
+	}
+	return nil
 }
 
-func (r *ProductRepository) loadProductImagesByProductID(ctx context.Context, productID uint) ([]*model.ProductImage, error) {
+func (r *ProductRepository) loadProductImagesByProductID(ctx context.Context, productID uint) ([]*model.ProductImage, *common.Error) {
 	var images []*model.ProductImage
 	if err := r.db.WithContext(ctx).
 		Where("product_id = ?", productID).
@@ -357,7 +398,7 @@ func (r *ProductRepository) loadProductImagesByProductID(ctx context.Context, pr
 		Preload("Variant").
 		Order("is_main DESC, \"order\" ASC, id ASC").
 		Find(&images).Error; err != nil {
-		return nil, err
+		return nil, r.returnError(ctx, err)
 	}
 	return images, nil
 }

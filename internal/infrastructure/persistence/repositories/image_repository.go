@@ -159,7 +159,7 @@ func (r *ImageRepository) UpdateImageFromReader(ctx context.Context, id uint, fi
 }
 
 // UpdateImageFromURL updates an image from a URL
-func (r *ImageRepository) UpdateImageFromURL(ctx context.Context, id uint, url string, fileName string) (*domain.Image, error) {
+func (r *ImageRepository) UpdateImageFromURL(ctx context.Context, id uint, url string, fileName string) (*domain.Image, *common.Error) {
 	img, err := r.GetImageByID(ctx, id)
 	if err != nil {
 		return nil, err

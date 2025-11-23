@@ -196,7 +196,3 @@ func ConvertErrorToResponse(err *Error) *ErrorResponse {
 		HTTPStatus: err.HTTPStatus,
 	}
 }
-
-func isInternalError(err *Error) bool {
-	return err.GetHttpStatus() >= http.StatusInternalServerError
-}

@@ -73,10 +73,9 @@ func (p *CreateProductRequest) ToDomain() *domain.Product {
 		var images []domain.ProductImage
 		for _, img := range p.Images {
 			images = append(images, domain.ProductImage{
-				ImageID:   img.ImageID,
-				VariantID: img.VariantID,
-				Order:     0,
-				IsMain:    img.IsMain,
+				ImageID: img.ImageID,
+				Order:   0,
+				IsMain:  img.IsMain,
 			})
 		}
 		domainProduct.Images = &images
@@ -153,15 +152,11 @@ func NewProductImageResponse(img *domain.ProductImage) *ProductImageResponse {
 	}
 
 	var variantResp *ProductVariantResponse
-	if img.Variant != nil {
-		variantResp = NewProductVariantResponse(img.Variant)
-	}
 
 	return &ProductImageResponse{
 		ID:        img.ID,
 		ProductID: img.ProductID,
 		ImageID:   img.ImageID,
-		VariantID: img.VariantID,
 		Order:     img.Order,
 		IsMain:    img.IsMain,
 		Image:     imageResp,

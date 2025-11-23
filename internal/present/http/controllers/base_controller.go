@@ -10,6 +10,7 @@ import (
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/log"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils/casting"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -55,6 +56,40 @@ func (b *baseController) GetFile(c *gin.Context, key string) (*multipart.FileHea
 		return nil, common.ErrBadRequest(c).SetDetail(fmt.Sprintf("file %s is required", key)).SetSource(common.CurrentService)
 	}
 	return file, nil
+}
+
+func (b *baseController) GetPaginationParams(ctx *gin.Context) (*dto.PaginationRequest, *common.Error) {
+	pageStr := ctx.Query("page")
+	sizeStr := ctx.Query("size")
+
+	var (
+		page int
+		size int
+		err  error
+	)
+
+	if pageStr == "" {
+		page = 1
+	} else {
+		page, err = casting.StringToInt(pageStr)
+		if err != nil {
+			return nil, common.ErrBadRequest(ctx).SetDetail(err.Error()).SetSource(common.CurrentService)
+		}
+	}
+
+	if sizeStr == "" {
+		size = 10
+	} else {
+		size, err = casting.StringToInt(sizeStr)
+		if err != nil {
+			return nil, common.ErrBadRequest(ctx).SetDetail(err.Error()).SetSource(common.CurrentService)
+		}
+	}
+
+	return &dto.PaginationRequest{
+		Page: page,
+		Size: size,
+	}, nil
 }
 
 func (b *baseController) BindAndValidateRequest(c *gin.Context, req interface{}) *common.Error {

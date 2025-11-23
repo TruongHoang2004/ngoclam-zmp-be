@@ -22,7 +22,7 @@ func NewImageService(base *baseService, imageRepo *repositories.ImageRepository)
 }
 
 // UploadImage uploads an image from byte data
-func (s *ImageService) UploadImage(ctx context.Context, fileName string, fileData []byte) (*domain.Image, error) {
+func (s *ImageService) UploadImage(ctx context.Context, fileName string, fileData []byte) (*domain.Image, *common.Error) {
 	return s.imageRepository.UploadImage(ctx, fileName, fileData)
 }
 
@@ -51,12 +51,7 @@ func (s *ImageService) GetImageByID(ctx context.Context, id uint) (*domain.Image
 func (s *ImageService) GetAllImages(ctx context.Context, page int, limit int) ([]*domain.Image, int64, *common.Error) {
 	list, total, err := s.imageRepository.GetAllImages(ctx, page, limit)
 
-	domainList := make([]*domain.Image, 0, len(list))
-	for _, img := range list {
-		domainList = append(domainList, domain.NewImageDomain(img))
-	}
-
-	return domainList, total, err
+	return list, total, err
 }
 
 // UpdateImage updates an image from byte data

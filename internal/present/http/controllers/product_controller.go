@@ -1,7 +1,8 @@
 package controllers
 
 import (
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
+	"net/http"
+
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -53,30 +54,30 @@ func (pc *ProductController) CreateProduct(ctx *gin.Context) {
 }
 
 func (pc *ProductController) GetProductByID(ctx *gin.Context) {
-	id, err := common.ParseUintParam(ctx, "id")
+	id, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
 	product, err := pc.productService.GetProductByID(ctx.Request.Context(), id)
 	if err != nil {
-		ctx.Error(err)
+		pc.ErrorData(ctx, err)
 		return
 	}
 	ctx.JSON(200, dto.NewProductResponse(product))
 }
 
 func (pc *ProductController) GetAllProduct(ctx *gin.Context) {
-	request, err := common.ParsePaginationParams(ctx)
+	pagination, err := pc.GetPaginationParams(ctx)
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid pagination parameters", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
-	products, total, err := pc.productService.ListProducts(ctx.Request.Context(), request.Page, request.Size)
+	products, total, err := pc.productService.ListProducts(ctx.Request.Context(), pagination.Page, pagination.Size)
 	if err != nil {
-		ctx.Error(err)
+		pc.ErrorData(ctx, err)
 		return
 	}
 
@@ -85,18 +86,18 @@ func (pc *ProductController) GetAllProduct(ctx *gin.Context) {
 		productsResponse = append(productsResponse, dto.NewProductResponse(product))
 	}
 
-	response := dto.NewPaginationResponse(productsResponse, total, *request)
+	response := dto.NewPaginationResponse(productsResponse, total, *pagination)
 	ctx.JSON(200, response)
 }
 
 func (pc *ProductController) UpdateProduct(ctx *gin.Context) {
-	payload := dto.UpdateProductRequest{}
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	request := dto.UpdateProductRequest{}
+	if err := pc.BindAndValidateRequest(ctx, request); err != nil {
+		pc.ErrorData(ctx, err)
 		return
 	}
 
-	if err := pc.productService.UpdateProduct(ctx.Request.Context(), &req); err != nil {
+	if err := pc.productService.UpdateProduct(ctx.Request.Context(), &request); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -104,65 +105,70 @@ func (pc *ProductController) UpdateProduct(ctx *gin.Context) {
 }
 
 func (pc *ProductController) DeleteProduct(ctx *gin.Context) {
-	id, err := common.ParseUintParam(ctx, "id")
+	id, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
 	if err := pc.productService.DeleteProduct(ctx.Request.Context(), id); err != nil {
-		ctx.Error(err)
+		pc.ErrorData(ctx, err)
 		return
 	}
 	ctx.JSON(200, gin.H{"message": "Product deleted successfully"})
 }
 
 func (pc *ProductController) AddProductVariant(ctx *gin.Context) {
-	payload := dto.AddProductVariantRequest{}
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	req := dto.AddProductVariantRequest{}
+	if err := pc.BindAndValidateRequest(ctx, &req); err != nil {
+		pc.ErrorData(ctx, err)
 		return
 	}
 
 	if err := pc.productService.AddProductVariant(ctx.Request.Context(), &req); err != nil {
-		ctx.Error(err)
+		pc.ErrorData(ctx, err)
 		return
 	}
-	ctx.JSON(201, gin.H{"message": "Product variant added successfully"})
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Product variant added successfully"})
 }
 
 func (pc *ProductController) UpdateProductVariant(ctx *gin.Context) {
-	payload := dto.UpdateProductVariantRequest{}
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	req := dto.UpdateProductVariantRequest{}
+	if err := pc.BindAndValidateRequest(ctx, &req); err != nil {
+		pc.ErrorData(ctx, err)
 		return
 	}
 
 	if err := pc.productService.UpdateProductVariant(ctx.Request.Context(), &req); err != nil {
-		ctx.Error(err)
+		pc.ErrorData(ctx, err)
 		return
 	}
 	ctx.JSON(200, gin.H{"message": "Product variant updated successfully"})
 }
 
 func (pc *ProductController) DeleteProductVariant(ctx *gin.Context) {
-	id, err := common.ParseUintParam(ctx, "id")
+	id, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
 	if err := pc.productService.DeleteProductVariant(ctx.Request.Context(), id); err != nil {
-		ctx.Error(err)
+		pc.ErrorData(ctx, err)
+		return
+	}
+
+	if err := pc.productService.DeleteProductVariant(ctx.Request.Context(), id); err != nil {
+		pc.ErrorData(ctx, err)
 		return
 	}
 	ctx.JSON(200, gin.H{"message": "Product variant deleted successfully"})
 }
 
 func (pc *ProductController) ListProductImages(ctx *gin.Context) {
-	id, err := common.ParseUintParam(ctx, "id")
+	id, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
@@ -181,21 +187,21 @@ func (pc *ProductController) ListProductImages(ctx *gin.Context) {
 }
 
 func (pc *ProductController) AttachProductImage(ctx *gin.Context) {
-	id, err := common.ParseUintParam(ctx, "id")
+	id, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
 	payload := dto.AttachProductImageRequest{}
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Error(common.BadRequest("Invalid request body", err))
+	if err := pc.BindAndValidateRequest(ctx, &payload); err != nil {
+		pc.ErrorData(ctx, err)
 		return
 	}
 
 	image, err := pc.productService.AddProductImage(ctx.Request.Context(), id, &payload)
 	if err != nil {
-		ctx.Error(err)
+		pc.ErrorData(ctx, err)
 		return
 	}
 
@@ -223,7 +229,7 @@ func (pc *ProductController) UpdateProductImage(ctx *gin.Context) {
 
 	image, err := pc.productService.UpdateProductImage(ctx.Request.Context(), productID, imageID, &req)
 	if err != nil {
-		ctx.Error(err)
+		pc.ErrorData(ctx, err)
 		return
 	}
 
@@ -231,15 +237,15 @@ func (pc *ProductController) UpdateProductImage(ctx *gin.Context) {
 }
 
 func (pc *ProductController) DeleteProductImage(ctx *gin.Context) {
-	productID, err := common.ParseUintParam(ctx, "id")
+	productID, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
-	imageID, err := common.ParseUintParam(ctx, "imageId")
+	imageID, err := pc.GetUintParam(ctx, "imageId")
 	if err != nil {
-		ctx.Error(common.BadRequest("Invalid image ID format", err))
+		pc.ErrorData(ctx, err)
 		return
 	}
 
