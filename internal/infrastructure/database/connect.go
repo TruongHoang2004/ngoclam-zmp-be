@@ -17,5 +17,5 @@ func NewDatabase() (*gorm.DB, error) {
 	}
 
 	log.Println("✅ Database connected")
-	return db.Debug(), nil
+	return db, nil
 }

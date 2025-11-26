@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
@@ -119,60 +120,72 @@ func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint) (
 
 // ListProducts with pagination, always includes variants
 func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int) ([]*domain.Product, int64, *common.Error) {
+	// Count
 	var total int64
-	if err := r.db.WithContext(ctx).Model(&model.Product{}).Count(&total).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Model(&model.Product{}).
+		Count(&total).Error; err != nil {
 		return nil, 0, r.returnError(ctx, err)
 	}
 
-	var products []*model.Product
-	if err := r.db.WithContext(ctx).
+	// Struct chứa tuple kết quả JOIN
+	type Row struct {
+		Product      model.Product      `gorm:"embedded;embeddedPrefix:product_"` // tránh clash field
+		ProductImage model.ProductImage `gorm:"embedded;embeddedPrefix:pi_"`
+		Image        model.Image        `gorm:"embedded;embeddedPrefix:img_"`
+	}
+
+	var rows []Row
+
+	err := r.db.WithContext(ctx).
+		Table("products AS p").
+		Select(
+			// Product fields với prefix product_
+			"p.id AS product_id",
+			"p.name AS product_name",
+			"p.description AS product_description",
+			"p.price AS product_price",
+			"p.created_at AS product_created_at",
+			"p.updated_at AS product_updated_at",
+
+			// ProductImage fields với prefix pi_
+			"pi.id AS pi_id",
+			"pi.product_id AS pi_product_id",
+			"pi.image_id AS pi_image_id",
+			"pi.is_main AS pi_is_main",
+			"pi.created_at AS pi_created_at",
+			"pi.updated_at AS pi_updated_at",
+
+			// Image fields với prefix img_
+			"img.id AS img_id",
+			"img.url AS img_url",
+			"img.created_at AS img_created_at",
+			"img.updated_at AS img_updated_at",
+		).
+		Joins("LEFT JOIN product_images AS pi ON pi.product_id = p.id").
+		Joins("LEFT JOIN images AS img ON img.id = pi.image_id").
+		Where("pi.is_main = ? OR pi.id IS NULL", true).
 		Offset(offset).
 		Limit(limit).
-		Find(&products).Error; err != nil {
+		Scan(&rows).Error
+
+	if err != nil {
 		return nil, 0, r.returnError(ctx, err)
 	}
 
-	// Collect all product IDs
-	// ids := make([]uint, 0, len(products))
-	// for _, p := range products {
-	// 	if p != nil {
-	// 		ids = append(ids, p.ID)
-	// 	}
-	// }
+	// Convert sang domain
+	result := make([]*domain.Product, 0)
 
-	// imageMap := make(map[uint][]domain.ProductImage)
-	// if len(ids) > 0 {
-	// 	var productImages []*model.ProductImage
-	// 	if err := r.db.WithContext(ctx).
-	// 		Where("product_id IN ? AND is_main = ?", ids, true).
-	// 		Preload("Image").
-	// 		Preload("Variant").
-	// 		Find(&productImages).Error; err != nil {
-	// 		return nil, 0, r.returnError(ctx, err)
-	// 	}
+	for _, r := range rows {
+		prod := domain.NewProductFromModel(&r.Product)
+		fmt.Println(r.Product.Name)
 
-	// 	for _, img := range productImages {
-	// 		if img == nil {
-	// 			continue
-	// 		}
-	// 		// keep only one main image per product
-	// 		if _, exists := imageMap[img.ProductID]; exists {
-	// 			continue
-	// 		}
-	// 		if d := domain.NewProductImageFromModel(img); d != nil {
-	// 			imageMap[img.ProductID] = []domain.ProductImage{*d}
-	// 		}
-	// 	}
-	// }
+		// Nếu có ảnh
+		if r.ProductImage.ID != 0 {
+			prod.SetImages([]*model.ProductImage{&r.ProductImage})
+		}
 
-	// Build final domain products
-	result := make([]*domain.Product, len(products))
-	for i, p := range products {
-		domainProd := domain.NewProductFromModel(p)
-		// if imgs, ok := imageMap[p.ID]; ok && len(imgs) > 0 {
-		// 	domainProd.Images = &imgs
-		// }
-		result[i] = domainProd
+		result = append(result, prod)
 	}
 
 	return result, total, nil
@@ -316,14 +329,22 @@ func (r *ProductRepository) ListProductImages(ctx context.Context, productID uin
 func (r *ProductRepository) GetProductImageByID(ctx context.Context, id uint) (*domain.ProductImage, *common.Error) {
 	var record model.ProductImage
 	if err := r.db.WithContext(ctx).
-		Preload("Image").
-		Preload("Variant").
 		First(&record, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, common.ErrNotFound(ctx, "Image", "not found").SetSource(common.CurrentService)
 		}
 		return nil, r.returnError(ctx, err)
 	}
+
+	var img []model.Image
+	if err := r.db.WithContext(ctx).
+		First(&img, record.ImageID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, common.ErrNotFound(ctx, "Image", "not found").SetSource(common.CurrentService)
+		}
+		return nil, r.returnError(ctx, err)
+	}
+
 	return domain.NewProductImageFromModel(&record), nil
 }
 
@@ -394,11 +415,10 @@ func (r *ProductRepository) loadProductImagesByProductID(ctx context.Context, pr
 	var images []*model.ProductImage
 	if err := r.db.WithContext(ctx).
 		Where("product_id = ?", productID).
-		Preload("Image").
-		Preload("Variant").
 		Order("is_main DESC, \"order\" ASC, id ASC").
 		Find(&images).Error; err != nil {
 		return nil, r.returnError(ctx, err)
 	}
+
 	return images, nil
 }

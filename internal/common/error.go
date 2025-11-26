@@ -10,10 +10,10 @@ import (
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/constant"
 )
 
-type CodeResponse int
+type CodeResponse string
 
 type ErrorResponse struct {
-	Code       int    `json:"code"`
+	Code       string `json:"code"`
 	Message    string `json:"message"`
 	TraceID    string `json:"trace_id,omitempty"`
 	Detail     string `json:"detail,omitempty"`
@@ -23,12 +23,12 @@ type ErrorResponse struct {
 
 const (
 	//internal
-	ErrorCodeBadRequest   CodeResponse = 400
-	ErrorCodeUnauthorized CodeResponse = 401
-	ErrorCodeForbidden    CodeResponse = 403
-	ErrorCodeNotFound     CodeResponse = 404
-	ErrorCodeConflict     CodeResponse = 409
-	ErrorCodeSystemError  CodeResponse = 500
+	ErrorCodeBadRequest   CodeResponse = "BAD_REQUEST"
+	ErrorCodeUnauthorized CodeResponse = "UNAUTHORIZED"
+	ErrorCodeForbidden    CodeResponse = "FORBIDDEN"
+	ErrorCodeNotFound     CodeResponse = "NOT_FOUND"
+	ErrorCodeConflict     CodeResponse = "CONFLICT"
+	ErrorCodeSystemError  CodeResponse = "INTERNAL_SERVER_ERROR"
 )
 
 type Source string
@@ -47,7 +47,7 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("code:[%d], message:[%s], detail:[%s], source:[%s]", e.Code, e.Message, e.Detail, e.Source)
+	return fmt.Sprintf("code:[%s], message:[%s], detail:[%s], source:[%s]", e.Code, e.Message, e.Detail, e.Source)
 }
 
 func (e *Error) GetHttpStatus() int {
@@ -185,13 +185,12 @@ const (
 )
 
 func ConvertErrorToResponse(err *Error) *ErrorResponse {
-	detail := ""
 
 	return &ErrorResponse{
-		Code:       int(err.Code),
+		Code:       string(err.Code),
 		Message:    err.Message,
 		TraceID:    err.TraceID,
-		Detail:     detail,
+		Detail:     err.Detail,
 		Source:     string(err.Source),
 		HTTPStatus: err.HTTPStatus,
 	}
