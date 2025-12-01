@@ -37,7 +37,7 @@ func (c *FolderController) RegisterRoutes(r *gin.RouterGroup) {
 
 func (c *FolderController) CreateFolder(ctx *gin.Context) {
 	var req dto.CreateFolderRequest
-	if err := c.BindAndValidateRequest(ctx, req); err != nil {
+	if err := c.BindAndValidateRequest(ctx, &req); err != nil {
 		c.ErrorData(ctx, err)
 		return
 	}

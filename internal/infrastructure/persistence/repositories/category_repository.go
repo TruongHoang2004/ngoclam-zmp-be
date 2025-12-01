@@ -39,6 +39,14 @@ func (c *CategoryRepository) GetCategoryByID(ctx context.Context, id uint) (*dom
 	return domain.NewCategoryDomain(&model), nil
 }
 
+func (c *CategoryRepository) IsExist(ctx context.Context, name, slug string) bool {
+	nameCount := int64(0)
+	slugCount := int64(0)
+	c.db.WithContext(ctx).Model(&model.Category{}).Where("name = ?", name).Count(&nameCount)
+	c.db.WithContext(ctx).Model(&model.Category{}).Where("slug = ?", slug).Count(&slugCount)
+	return nameCount > 0 || slugCount > 0
+}
+
 func (c *CategoryRepository) GetCategoryDetail(ctx context.Context, id uint) (*domain.Category, *common.Error) {
 	var categoryModel model.Category
 	err := c.db.WithContext(ctx).First(&categoryModel, id).Error
@@ -61,6 +69,31 @@ func (c *CategoryRepository) GetCategoryDetail(ctx context.Context, id uint) (*d
 	}
 	return domain.NewCategoryDomain(&categoryModel), nil
 
+}
+
+func (c *CategoryRepository) ListCategories(ctx context.Context) ([]*domain.Category, *common.Error) {
+	var models []model.Category
+	err := c.db.WithContext(ctx).Find(&models).Error
+	if err != nil {
+		return nil, c.returnError(ctx, err)
+	}
+
+	var categories []*domain.Category
+	for _, catModel := range models {
+		categoryDomain := domain.NewCategoryDomain(&catModel)
+		if catModel.ImageID != nil {
+			var image model.Image
+			err = c.db.WithContext(ctx).First(&image, *catModel.ImageID).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, c.returnError(ctx, err)
+			}
+			if err == nil {
+				categoryDomain.AddImage(&image)
+			}
+		}
+		categories = append(categories, categoryDomain)
+	}
+	return categories, nil
 }
 
 func (c *CategoryRepository) UpdateCategory(ctx context.Context, category *domain.Category) *common.Error {

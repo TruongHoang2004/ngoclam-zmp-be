@@ -111,7 +111,7 @@ func (r *ImageRepository) GetImageByID(ctx context.Context, id uint) (*model.Ima
 }
 
 func (r *ImageRepository) GetAllImages(ctx context.Context, page int, limit int) ([]*domain.Image, int64, *common.Error) {
-	var images []*domain.Image
+	var images []*model.Image
 	offset := (page - 1) * limit
 
 	var total int64
@@ -123,7 +123,12 @@ func (r *ImageRepository) GetAllImages(ctx context.Context, page int, limit int)
 		return nil, 0, r.returnError(ctx, err)
 	}
 
-	return images, total, nil
+	var domainImages []*domain.Image
+	for _, img := range images {
+		domainImages = append(domainImages, domain.NewImageDomain(img))
+	}
+
+	return domainImages, total, nil
 }
 
 // Update (replace image) updates an image from byte data

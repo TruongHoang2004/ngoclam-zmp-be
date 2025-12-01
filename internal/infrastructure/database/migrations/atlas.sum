@@ -1,4 +1,6 @@
-h1:oOLc3TkZd/SIWsos6qxDWIzhrBdBDGIqtskFA8YPGh4=
+h1:fiL1SJ8mKPqt+wEqM23q+duJzp/59g+8C/dSBXoEzos=
 20251119165126_init.sql h1:s9w1fAS5ullcF0Z6qz9ivWwlXo5sDLfSDmZRRq5FR+U=
 20251121183916_product_image.sql h1:Mj6MDFD5FOXcRorINJaPcJIuz8rhqcWTPCn3ptVJ7iw=
 20251126181041_add_category.sql h1:LOder7n42/VyHr8QK9CC4i+SDM1ECQx5SZh+vPwHrkY=
+20251129141603_remove_product_variant_image.sql h1:/A+LszndXH5Ik8dfFlFfNR1LX2IQ/D+DpMWGApoSqzM=
+20251129142851_add_category_id_for_product.sql h1:mFcFbMIcjsQFMJyXswLNwnzfOJSgL59AjeL+l7GGDOE=

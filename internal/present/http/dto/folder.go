@@ -11,7 +11,7 @@ type FolderResponse struct {
 }
 
 type CreateFolderRequest struct {
-	Name        string `json:"name" binding:"required"`
+	Name        string `json:"name" validate:"required"`
 	Description string `json:"description,omitempty"`
 }
 

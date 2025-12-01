@@ -4,11 +4,16 @@ import "time"
 
 type Product struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
+	CategoryID  uint      `gorm:"index" json:"category_id"`
 	Name        string    `gorm:"type:varchar(255);unique" json:"name"`
 	Description *string   `gorm:"type:text" json:"description,omitempty"`
 	Price       int64     `gorm:"type:bigint" json:"price,omitempty"`
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
+func (Product) TableName() string {
+	return "products"
 }
 
 type ProductVariant struct {
@@ -18,11 +23,24 @@ type ProductVariant struct {
 	Stock     int64     `gorm:"type:bigint" json:"stock,omitempty"`
 	Price     int64     `gorm:"type:bigint" json:"price,omitempty"`
 	Order     int       `gorm:"default:0" json:"order,omitempty"`
-	ImageID   *uint     `gorm:"index" json:"image_id,omitempty"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-func (Product) TableName() string {
-	return "products"
+func (ProductVariant) TableName() string {
+	return "product_variants"
+}
+
+type ProductImage struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	ProductID uint      `gorm:"index;not null" json:"product_id"`
+	ImageID   uint      `gorm:"index;not null" json:"image_id"`
+	Order     int       `gorm:"default:0" json:"order"`
+	IsMain    bool      `gorm:"default:false" json:"is_main"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
+func (ProductImage) TableName() string {
+	return "product_images"
 }

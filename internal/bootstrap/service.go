@@ -11,5 +11,6 @@ func BuildService() fx.Option {
 		services.NewFolderService,
 		services.NewImageService,
 		services.NewProductService,
+		services.NewCategoryService,
 	)
 }

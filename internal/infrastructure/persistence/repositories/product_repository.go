@@ -140,15 +140,14 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 	err := r.db.WithContext(ctx).
 		Table("products AS p").
 		Select(
-			// Product fields với prefix product_
 			"p.id AS product_id",
 			"p.name AS product_name",
+			"p.category_id AS product_category_id",
 			"p.description AS product_description",
 			"p.price AS product_price",
 			"p.created_at AS product_created_at",
 			"p.updated_at AS product_updated_at",
 
-			// ProductImage fields với prefix pi_
 			"pi.id AS pi_id",
 			"pi.product_id AS pi_product_id",
 			"pi.image_id AS pi_image_id",
@@ -156,16 +155,13 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 			"pi.created_at AS pi_created_at",
 			"pi.updated_at AS pi_updated_at",
 
-			// Image fields với prefix img_
 			"img.id AS img_id",
 			"img.url AS img_url",
 			"img.created_at AS img_created_at",
 			"img.updated_at AS img_updated_at",
 		).
-		Joins("LEFT JOIN product_images AS pi ON pi.product_id = p.id").
-		Joins("LEFT JOIN images AS img ON img.id = pi.image_id").
-		Where("pi.is_main = ? OR pi.id IS NULL", true).
-		Offset(offset).
+		Joins("LEFT JOIN product_images AS pi ON pi.product_id = p.id AND pi.is_main = ?", true).
+		Joins("LEFT JOIN images AS img ON img.id = pi.image_id").Offset(offset).
 		Limit(limit).
 		Scan(&rows).Error
 
@@ -181,6 +177,72 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 		fmt.Println(r.Product.Name)
 
 		// Nếu có ảnh
+		if r.ProductImage.ID != 0 {
+			prod.SetImages([]*model.ProductImage{&r.ProductImage})
+		}
+
+		result = append(result, prod)
+	}
+
+	return result, total, nil
+}
+
+func (r *ProductRepository) GetProductsByCategoryID(ctx context.Context, categoryID uint, offset, limit int) ([]*domain.Product, int64, *common.Error) {
+	var total int64
+	if err := r.db.WithContext(ctx).
+		Model(&model.Product{}).
+		Where("category_id = ?", categoryID).
+		Count(&total).Error; err != nil {
+		return nil, 0, r.returnError(ctx, err)
+	}
+
+	type Row struct {
+		Product      model.Product      `gorm:"embedded;embeddedPrefix:product_"`
+		ProductImage model.ProductImage `gorm:"embedded;embeddedPrefix:pi_"`
+		Image        model.Image        `gorm:"embedded;embeddedPrefix:img_"`
+	}
+
+	var rows []Row
+
+	err := r.db.WithContext(ctx).
+		Table("products AS p").
+		Select(
+			"p.id AS product_id",
+			"p.name AS product_name",
+			"p.category_id AS product_category_id",
+			"p.description AS product_description",
+			"p.price AS product_price",
+			"p.created_at AS product_created_at",
+			"p.updated_at AS product_updated_at",
+
+			"pi.id AS pi_id",
+			"pi.product_id AS pi_product_id",
+			"pi.image_id AS pi_image_id",
+			"pi.is_main AS pi_is_main",
+			"pi.created_at AS pi_created_at",
+			"pi.updated_at AS pi_updated_at",
+
+			"img.id AS img_id",
+			"img.url AS img_url",
+			"img.created_at AS img_created_at",
+			"img.updated_at AS img_updated_at",
+		).
+		Joins("LEFT JOIN product_images AS pi ON pi.product_id = p.id AND pi.is_main = ?", true).
+		Joins("LEFT JOIN images AS img ON img.id = pi.image_id").
+		Where("p.category_id = ?", categoryID).
+		Offset(offset).
+		Limit(limit).
+		Scan(&rows).Error
+
+	if err != nil {
+		return nil, 0, r.returnError(ctx, err)
+	}
+
+	result := make([]*domain.Product, 0)
+
+	for _, r := range rows {
+		prod := domain.NewProductFromModel(&r.Product)
+
 		if r.ProductImage.ID != 0 {
 			prod.SetImages([]*model.ProductImage{&r.ProductImage})
 		}

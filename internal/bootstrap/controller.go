@@ -13,6 +13,7 @@ func BuildController() fx.Option {
 		fx.Provide(controllers.NewFolderController),
 		fx.Provide(controllers.NewProductController),
 		fx.Provide(controllers.NewImageController),
+		fx.Provide(controllers.NewCategoryController),
 	)
 }
 

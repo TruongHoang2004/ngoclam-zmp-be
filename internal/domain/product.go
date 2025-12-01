@@ -36,7 +36,6 @@ type ProductVariant struct {
 	Stock     int64     `json:"stock,omitempty"`
 	Order     int       `json:"order,omitempty"`
 	Price     int64     `json:"price,omitempty"`
-	ImageID   *uint     `json:"image_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
