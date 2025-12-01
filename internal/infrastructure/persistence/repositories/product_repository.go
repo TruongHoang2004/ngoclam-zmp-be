@@ -91,7 +91,6 @@ func (r *ProductRepository) GetProductSummaryByID(ctx context.Context, id uint) 
 	return domainProd, nil
 }
 
-// GetProductDetailByID fetches product + manually loads variants if requested
 func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint) (*domain.Product, *common.Error) {
 	var prod model.Product
 	if err := r.db.WithContext(ctx).First(&prod, id).Error; err != nil {
@@ -109,11 +108,14 @@ func (r *ProductRepository) GetProductDetailByID(ctx context.Context, id uint) (
 	}
 	domainProd.Variants = variants
 
-	images, err := r.loadProductImagesByProductID(ctx, id)
-	if err != nil {
-		return nil, err
+	var productImages []*model.ProductImage
+	if err := r.db.WithContext(ctx).
+		Where("product_id = ?", id).
+		Find(&productImages).Error; err != nil {
+		return nil, r.returnError(ctx, err)
 	}
-	domainProd.SetImages(images)
+
+	domainProd.SetImages(productImages)
 
 	return domainProd, nil
 }
@@ -128,9 +130,8 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 		return nil, 0, r.returnError(ctx, err)
 	}
 
-	// Struct chứa tuple kết quả JOIN
 	type Row struct {
-		Product      model.Product      `gorm:"embedded;embeddedPrefix:product_"` // tránh clash field
+		Product      model.Product      `gorm:"embedded;embeddedPrefix:product_"`
 		ProductImage model.ProductImage `gorm:"embedded;embeddedPrefix:pi_"`
 		Image        model.Image        `gorm:"embedded;embeddedPrefix:img_"`
 	}
@@ -156,7 +157,9 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 			"pi.updated_at AS pi_updated_at",
 
 			"img.id AS img_id",
+			"img.name AS img_name",
 			"img.url AS img_url",
+			"img.hash AS img_hash",
 			"img.created_at AS img_created_at",
 			"img.updated_at AS img_updated_at",
 		).
@@ -178,7 +181,10 @@ func (r *ProductRepository) ListProducts(ctx context.Context, offset, limit int)
 
 		// Nếu có ảnh
 		if r.ProductImage.ID != 0 {
-			prod.SetImages([]*model.ProductImage{&r.ProductImage})
+			domPI := domain.NewProductImageFromModel(&r.ProductImage)
+			domImg := domain.NewImageDomain(&r.Image)
+			domPI.SetImage(domImg)
+			prod.Images = &[]domain.ProductImage{*domPI}
 		}
 
 		result = append(result, prod)
@@ -223,7 +229,9 @@ func (r *ProductRepository) GetProductsByCategoryID(ctx context.Context, categor
 			"pi.updated_at AS pi_updated_at",
 
 			"img.id AS img_id",
+			"img.name AS img_name",
 			"img.url AS img_url",
+			"img.hash AS img_hash",
 			"img.created_at AS img_created_at",
 			"img.updated_at AS img_updated_at",
 		).
@@ -244,7 +252,10 @@ func (r *ProductRepository) GetProductsByCategoryID(ctx context.Context, categor
 		prod := domain.NewProductFromModel(&r.Product)
 
 		if r.ProductImage.ID != 0 {
-			prod.SetImages([]*model.ProductImage{&r.ProductImage})
+			domPI := domain.NewProductImageFromModel(&r.ProductImage)
+			domImg := domain.NewImageDomain(&r.Image)
+			domPI.SetImage(domImg)
+			prod.Images = &[]domain.ProductImage{*domPI}
 		}
 
 		result = append(result, prod)
