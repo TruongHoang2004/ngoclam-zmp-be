@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repositories"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 )
@@ -17,22 +17,19 @@ func NewFolderService(repo *repositories.FolderRepository) *FolderService {
 	return &FolderService{repo: repo}
 }
 
-func (s *FolderService) CreateFolder(ctx context.Context, name string, description string) (*domain.Folder, *common.Error) {
-	f := &domain.Folder{
-		Name:        name,
-		Description: description,
+func (s *FolderService) CreateFolder(ctx context.Context, req *dto.CreateFolderRequest) *common.Error {
+	f := req.ToModel()
+	if req.ParentID != nil {
+		f.ParentID = req.ParentID
 	}
-	if err := s.repo.CreateFolder(ctx, f); err != nil {
-		return nil, err
-	}
-	return f, nil
+	return s.repo.CreateFolder(ctx, f)
 }
 
-func (s *FolderService) GetFolderByID(ctx context.Context, id uint) (*domain.Folder, *common.Error) {
+func (s *FolderService) GetFolderByID(ctx context.Context, id uint) (*model.Folder, *common.Error) {
 	return s.repo.GetFolderByID(ctx, id)
 }
 
-func (s *FolderService) ListFolders(ctx context.Context, page int, size int) ([]*domain.Folder, int64, *common.Error) {
+func (s *FolderService) ListFolders(ctx context.Context, page int, size int) ([]*model.Folder, int64, *common.Error) {
 	if page < 1 {
 		page = 1
 	}
@@ -43,19 +40,23 @@ func (s *FolderService) ListFolders(ctx context.Context, page int, size int) ([]
 	return s.repo.ListFolders(ctx, offset, size)
 }
 
-func (s *FolderService) UpdateFolder(ctx context.Context, folderId uint, req *dto.UpdateFolderRequest) (*domain.Folder, *common.Error) {
-	folder, err := s.repo.GetFolderByID(ctx, folderId)
+func (s *FolderService) UpdateFolder(ctx context.Context, id uint, req *dto.UpdateFolderRequest) (*model.Folder, *common.Error) {
+	folder, err := s.repo.GetFolderByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	folder.Name = req.Name
-	folder.Description = req.Description
-	if updated, err := s.repo.UpdateFolder(ctx, folder); err != nil {
-		return nil, err
-	} else {
-		folder = updated
+
+	if req.Name != nil {
+		folder.Name = *req.Name
 	}
-	return folder, nil
+	if req.Description != nil {
+		folder.Description = *req.Description
+	}
+	if req.ParentID != nil {
+		folder.ParentID = req.ParentID
+	}
+
+	return s.repo.UpdateFolder(ctx, folder)
 }
 
 func (s *FolderService) DeleteFolder(ctx context.Context, id uint) error {

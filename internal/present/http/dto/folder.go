@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 )
 
 type FolderResponse struct {
@@ -10,20 +10,30 @@ type FolderResponse struct {
 	Description string `json:"description"`
 }
 
-type CreateFolderRequest struct {
-	Name        string `json:"name" validate:"required"`
-	Description string `json:"description,omitempty"`
-}
-
-type UpdateFolderRequest struct {
-	Name        string `json:"name" `
-	Description string `json:"description,omitempty"`
-}
-
-func NewFolderResponse(f *domain.Folder) *FolderResponse {
+func NewFolderResponse(f *model.Folder) *FolderResponse {
 	return &FolderResponse{
 		ID:          f.ID,
 		Name:        f.Name,
 		Description: f.Description,
+	}
+}
+
+type CreateFolderRequest struct {
+	Name        string `json:"name" validate:"required"`
+	Description string `json:"description,omitempty"`
+	ParentID    *uint  `json:"parent_id,omitempty"`
+}
+
+type UpdateFolderRequest struct {
+	Name        *string `json:"name" `
+	Description *string `json:"description,omitempty"`
+	ParentID    *uint   `json:"parent_id,omitempty"`
+}
+
+func (r *CreateFolderRequest) ToModel() *model.Folder {
+	return &model.Folder{
+		Name:        r.Name,
+		Description: r.Description,
+		ParentID:    r.ParentID,
 	}
 }

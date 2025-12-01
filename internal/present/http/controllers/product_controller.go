@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	httpCommon "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -40,17 +41,17 @@ func (pc *ProductController) RegisterRoutes(r *gin.RouterGroup) {
 }
 
 func (pc *ProductController) CreateProduct(ctx *gin.Context) {
-	req := new(dto.CreateProductRequest)
-	if err := pc.BindAndValidateRequest(ctx, req); err != nil {
+	req := dto.CreateProductRequest{}
+	if err := pc.BindAndValidateRequest(ctx, &req); err != nil {
 		pc.ErrorData(ctx, err)
 		return
 	}
 
-	if err := pc.productService.CreateProduct(ctx.Request.Context(), req); err != nil {
+	if err := pc.productService.CreateProduct(ctx.Request.Context(), &req); err != nil {
 		pc.ErrorData(ctx, err)
 		return
 	}
-	ctx.JSON(201, gin.H{"message": "Product created successfully"})
+	ctx.JSON(http.StatusCreated, httpCommon.NewSuccessResponse(nil))
 }
 
 func (pc *ProductController) GetProductByID(ctx *gin.Context) {
@@ -65,7 +66,7 @@ func (pc *ProductController) GetProductByID(ctx *gin.Context) {
 		pc.ErrorData(ctx, err)
 		return
 	}
-	ctx.JSON(200, dto.NewProductResponse(product))
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewProductResponse(product)))
 }
 
 func (pc *ProductController) GetAllProduct(ctx *gin.Context) {
@@ -92,7 +93,7 @@ func (pc *ProductController) GetAllProduct(ctx *gin.Context) {
 
 func (pc *ProductController) UpdateProduct(ctx *gin.Context) {
 	request := dto.UpdateProductRequest{}
-	if err := pc.BindAndValidateRequest(ctx, request); err != nil {
+	if err := pc.BindAndValidateRequest(ctx, &request); err != nil {
 		pc.ErrorData(ctx, err)
 		return
 	}
@@ -129,7 +130,7 @@ func (pc *ProductController) AddProductVariant(ctx *gin.Context) {
 		pc.ErrorData(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{"message": "Product variant added successfully"})
+	ctx.JSON(http.StatusCreated, httpCommon.NewSuccessResponse(nil))
 }
 
 func (pc *ProductController) UpdateProductVariant(ctx *gin.Context) {
@@ -139,11 +140,12 @@ func (pc *ProductController) UpdateProductVariant(ctx *gin.Context) {
 		return
 	}
 
-	if err := pc.productService.UpdateProductVariant(ctx.Request.Context(), &req); err != nil {
+	_, err := pc.productService.UpdateProductVariant(ctx.Request.Context(), &req)
+	if err != nil {
 		pc.ErrorData(ctx, err)
 		return
 	}
-	ctx.JSON(200, gin.H{"message": "Product variant updated successfully"})
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(nil))
 }
 
 func (pc *ProductController) DeleteProductVariant(ctx *gin.Context) {
@@ -166,28 +168,28 @@ func (pc *ProductController) DeleteProductVariant(ctx *gin.Context) {
 }
 
 func (pc *ProductController) ListProductImages(ctx *gin.Context) {
-	id, err := pc.GetUintParam(ctx, "id")
+	productID, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
 		pc.ErrorData(ctx, err)
 		return
 	}
 
-	images, err := pc.productService.ListProductImages(ctx.Request.Context(), id)
+	images, err := pc.productService.ListProductImages(ctx.Request.Context(), productID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	imageResponses := make([]*dto.ProductImageResponse, 0, len(images))
-	for _, img := range images {
-		imageResponses = append(imageResponses, dto.NewProductImageResponse(img))
+	var responses []dto.ProductImageResponse
+	for _, image := range images {
+		responses = append(responses, *dto.NewProductImageResponse(image))
 	}
 
-	ctx.JSON(200, gin.H{"images": imageResponses})
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(responses))
 }
 
 func (pc *ProductController) AttachProductImage(ctx *gin.Context) {
-	id, err := pc.GetUintParam(ctx, "id")
+	productID, err := pc.GetUintParam(ctx, "id")
 	if err != nil {
 		pc.ErrorData(ctx, err)
 		return
@@ -199,13 +201,13 @@ func (pc *ProductController) AttachProductImage(ctx *gin.Context) {
 		return
 	}
 
-	image, err := pc.productService.AddProductImage(ctx.Request.Context(), id, &payload)
+	img, err := pc.productService.AddProductImage(ctx.Request.Context(), productID, &payload)
 	if err != nil {
 		pc.ErrorData(ctx, err)
 		return
 	}
 
-	ctx.JSON(201, dto.NewProductImageResponse(image))
+	ctx.JSON(http.StatusCreated, httpCommon.NewSuccessResponse(dto.NewProductImageResponse(img)))
 }
 
 func (pc *ProductController) UpdateProductImage(ctx *gin.Context) {
@@ -233,7 +235,7 @@ func (pc *ProductController) UpdateProductImage(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, dto.NewProductImageResponse(image))
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewProductImageResponse(image)))
 }
 
 func (pc *ProductController) DeleteProductImage(ctx *gin.Context) {

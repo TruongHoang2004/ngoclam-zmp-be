@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 )
 
 type CreateProductVariantRequest struct {
@@ -32,13 +32,13 @@ type ProductVariantResponse struct {
 	// Stock     int64  `json:"stock"`
 }
 
-func NewProductVariantResponse(domain *domain.ProductVariant) *ProductVariantResponse {
+func NewProductVariantResponse(m *model.ProductVariant) *ProductVariantResponse {
 	return &ProductVariantResponse{
-		ID:        domain.ID,
-		ProductID: domain.ProductID,
-		Name:      domain.Name,
-		Price:     domain.Price,
-		// Stock:     domain.Stock,
+		ID:        m.ID,
+		ProductID: m.ProductID,
+		Name:      m.Name,
+		Price:     m.Price,
+		// Stock:     m.Stock,
 	}
 }
 
@@ -46,42 +46,43 @@ type CreateProductRequest struct {
 	Name        string                        `json:"name" binding:"required,min=1,max=255"`
 	Description string                        `json:"description"`
 	Price       int64                         `json:"price" binding:"required,gt=0"`
+	CategoryID  uint                          `json:"category_id" binding:"required,gt=0"`
 	Variants    []CreateProductVariantRequest `json:"variants,omitempty"`
 	Images      []AttachProductImageRequest   `json:"images,omitempty"`
 }
 
-func (p *CreateProductRequest) ToDomain() *domain.Product {
-	domainProduct := &domain.Product{
+func (p *CreateProductRequest) ToModel() *model.Product {
+	product := &model.Product{
 		Name:        p.Name,
 		Description: &p.Description,
 		Price:       p.Price,
 	}
 
 	if len(p.Variants) > 0 {
-		var variants []domain.ProductVariant
+		var variants []model.ProductVariant
 		for _, v := range p.Variants {
-			variants = append(variants, domain.ProductVariant{
+			variants = append(variants, model.ProductVariant{
 				Name:  v.Name,
 				Price: v.Price,
 				Stock: v.Stock,
 			})
 		}
-		domainProduct.Variants = &variants
+		product.Variants = variants
 	}
 
 	if len(p.Images) > 0 {
-		var images []domain.ProductImage
+		var images []model.ProductImage
 		for _, img := range p.Images {
-			images = append(images, domain.ProductImage{
+			images = append(images, model.ProductImage{
 				ImageID: img.ImageID,
 				Order:   0,
 				IsMain:  img.IsMain,
 			})
 		}
-		domainProduct.Images = &images
+		product.ProductImages = images
 	}
 
-	return domainProduct
+	return product
 }
 
 type UpdateProductRequest struct {
@@ -100,31 +101,31 @@ type ProductResponse struct {
 	Images      []ProductImageResponse   `json:"images,omitempty"`
 }
 
-func NewProductResponse(domain *domain.Product) *ProductResponse {
+func NewProductResponse(m *model.Product) *ProductResponse {
 	var desc string
-	if domain.Description != nil {
-		desc = *domain.Description
+	if m.Description != nil {
+		desc = *m.Description
 	}
 
 	var variant []ProductVariantResponse
-	if domain.Variants != nil && len(*domain.Variants) > 0 {
-		for _, v := range *domain.Variants {
+	if len(m.Variants) > 0 {
+		for _, v := range m.Variants {
 			variant = append(variant, *NewProductVariantResponse(&v))
 		}
 	}
 
 	var images []ProductImageResponse
-	if domain.Images != nil && len(*domain.Images) > 0 {
-		for _, img := range *domain.Images {
+	if len(m.ProductImages) > 0 {
+		for _, img := range m.ProductImages {
 			images = append(images, *NewProductImageResponse(&img))
 		}
 	}
 
 	return &ProductResponse{
-		ID:          domain.ID,
-		Name:        domain.Name,
+		ID:          m.ID,
+		Name:        m.Name,
 		Description: desc,
-		Price:       domain.Price,
+		Price:       m.Price,
 		Variants:    variant,
 		Images:      images,
 	}
@@ -141,7 +142,7 @@ type ProductImageResponse struct {
 	Variant   *ProductVariantResponse `json:"variant,omitempty"`
 }
 
-func NewProductImageResponse(img *domain.ProductImage) *ProductImageResponse {
+func NewProductImageResponse(img *model.ProductImage) *ProductImageResponse {
 	if img == nil {
 		return nil
 	}

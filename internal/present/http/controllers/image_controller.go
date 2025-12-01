@@ -3,7 +3,10 @@ package controllers
 import (
 	"net/http"
 
+	"io"
+
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
+	httpCommon "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -35,31 +38,36 @@ func (c *ImageController) RegisterRoutes(r *gin.RouterGroup) {
 }
 
 func (c *ImageController) UploadImage(ctx *gin.Context) {
-	file, err := c.GetFile(ctx, "file")
+	fileHeader, err := c.GetFile(ctx, "file")
 	if err != nil {
 		c.ErrorData(ctx, err)
 		return
 	}
 
-	// The original filename uploaded by the client
-	fileName := file.Filename
-
-	// Open the file to read its content
-	f, ferr := file.Open()
-	if ferr != nil {
-		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetDetail(ferr.Error()).SetSource(common.CurrentService))
+	f, openErr := fileHeader.Open()
+	if openErr != nil {
+		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetDetail(openErr.Error()).SetSource(common.CurrentService))
 		return
 	}
 	defer f.Close()
 
-	// Use io.Reader directly for better memory efficiency
-	image, err := c.imageService.UploadImageFromReader(ctx.Request.Context(), f, fileName)
-	if err != nil {
-		ctx.Error(err)
+	fileBytes, readErr := io.ReadAll(f)
+	if readErr != nil {
+		c.ErrorData(ctx, common.ErrSystemError(ctx, readErr.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, dto.NewImageResponse(image))
+	// The original filename uploaded by the client
+	fileName := fileHeader.Filename
+
+	// Use io.Reader directly for better memory efficiency
+	image, err := c.imageService.UploadImage(ctx, fileName, fileBytes)
+	if err != nil {
+		ctx.JSON(err.HTTPStatus, err)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, httpCommon.NewSuccessResponse(dto.NewImageResponse(image)))
 }
 
 // UploadImageFromURL handles image upload from a URL
@@ -74,13 +82,13 @@ func (c *ImageController) UploadImageFromURL(ctx *gin.Context) {
 		return
 	}
 
-	image, err := c.imageService.UploadImageFromURL(ctx.Request.Context(), req.URL, req.FileName)
+	image, err := c.imageService.UploadImageFromURL(ctx, req.URL, req.FileName)
 	if err != nil {
-		c.ErrorData(ctx, err)
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, dto.NewImageResponse(image))
+	ctx.JSON(http.StatusCreated, httpCommon.NewSuccessResponse(dto.NewImageResponse(image)))
 }
 
 func (c *ImageController) GetImageByID(ctx *gin.Context) {
@@ -91,12 +99,13 @@ func (c *ImageController) GetImageByID(ctx *gin.Context) {
 		return
 	}
 
-	image, err := c.imageService.GetImageByID(ctx.Request.Context(), id)
+	image, err := c.imageService.GetImageByID(ctx, uint(id))
 	if err != nil {
-		c.ErrorData(ctx, err)
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, dto.NewImageResponse(image))
+
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewImageResponse(image)))
 }
 
 func (c *ImageController) GetAllImages(ctx *gin.Context) {
@@ -107,19 +116,18 @@ func (c *ImageController) GetAllImages(ctx *gin.Context) {
 	}
 	req.Normalize()
 
-	images, total, err := c.imageService.GetAllImages(ctx.Request.Context(), req.Page, req.Size)
+	imageList, total, err := c.imageService.GetAllImages(ctx, req.Page, req.Size)
 	if err != nil {
-		c.ErrorData(ctx, err)
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
 
-	var imageResponses []dto.ImageResponse
-	for _, img := range images {
-		imageResponses = append(imageResponses, *dto.NewImageResponse(img))
+	var responses []dto.ImageResponse
+	for _, img := range imageList {
+		responses = append(responses, *dto.NewImageResponse(img))
 	}
 
-	page := dto.NewPaginationResponse(imageResponses, total, req)
-	ctx.JSON(http.StatusOK, page)
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewPaginationResponse(responses, total, dto.PaginationRequest{Page: req.Page, Size: req.Size})))
 
 }
 
@@ -130,27 +138,34 @@ func (c *ImageController) UpdateImage(ctx *gin.Context) {
 		return
 	}
 
-	file, err := c.GetFile(ctx, "file")
+	fileHeader, err := c.GetFile(ctx, "file")
 	if err != nil {
 		c.ErrorData(ctx, err)
 		return
 	}
 
-	fileName := file.Filename
-	f, ferr := file.Open()
-	if ferr != nil {
-		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetDetail(ferr.Error()).SetSource(common.CurrentService))
+	f, openErr := fileHeader.Open()
+	if openErr != nil {
+		c.ErrorData(ctx, common.ErrBadRequest(ctx).SetDetail(openErr.Error()).SetSource(common.CurrentService))
 		return
 	}
 	defer f.Close()
 
-	image, err := c.imageService.UpdateImageFromReader(ctx.Request.Context(), id, f, fileName)
-	if err != nil {
-		ctx.Error(err)
+	fileBytes, readErr := io.ReadAll(f)
+	if readErr != nil {
+		c.ErrorData(ctx, common.ErrSystemError(ctx, readErr.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewImageResponse(image))
+	fileName := fileHeader.Filename
+
+	image, err := c.imageService.UpdateImage(ctx, uint(id), fileName, fileBytes)
+	if err != nil {
+		ctx.JSON(err.HTTPStatus, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewImageResponse(image)))
 }
 
 // UpdateImageFromURL handles image update from a URL
@@ -171,13 +186,13 @@ func (c *ImageController) UpdateImageFromURL(ctx *gin.Context) {
 		return
 	}
 
-	image, err := c.imageService.UpdateImageFromURL(ctx.Request.Context(), id, req.URL, req.FileName)
+	image, err := c.imageService.UpdateImageFromURL(ctx, uint(id), req.URL, req.FileName)
 	if err != nil {
-		ctx.Error(err)
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewImageResponse(image))
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewImageResponse(image)))
 }
 
 func (c *ImageController) DeleteImage(ctx *gin.Context) {

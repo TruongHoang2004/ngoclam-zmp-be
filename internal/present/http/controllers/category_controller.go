@@ -1,6 +1,11 @@
 package controllers
 
 import (
+	"net/http"
+	"strconv"
+
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
+	httpCommon "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -26,7 +31,7 @@ func (c *CategoryController) RegisterRoutes(r *gin.RouterGroup) {
 	categories := r.Group("/categories")
 	{
 		categories.POST("", c.CreateCategory)
-		categories.GET("/:id", c.GetCategoryByID)
+		categories.GET("/:id", c.GetCategory)
 		categories.GET("", c.ListCategories)
 		categories.PUT("/:id", c.UpdateCategory)
 		categories.DELETE("/:id", c.DeleteCategory)
@@ -41,39 +46,43 @@ func (c *CategoryController) CreateCategory(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.categoryService.CreateCategory(ctx.Request.Context(), &req)
-	if err != nil {
-		c.ErrorData(ctx, err)
+	if err := c.categoryService.CreateCategory(ctx, &req); err != nil {
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
 
-	c.Success(ctx, res)
+	ctx.JSON(http.StatusCreated, httpCommon.NewSuccessResponse(nil))
 }
 
-func (c *CategoryController) GetCategoryByID(ctx *gin.Context) {
-	id, err := c.GetUintParam(ctx, "id")
+func (c *CategoryController) GetCategory(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		c.ErrorData(ctx, err)
+		ctx.JSON(http.StatusBadRequest, common.ErrBadRequest(ctx).SetDetail("Invalid category ID"))
 		return
 	}
 
-	res, err := c.categoryService.GetCategoryByID(ctx.Request.Context(), id)
-	if err != nil {
-		c.ErrorData(ctx, err)
+	category, serviceErr := c.categoryService.GetCategoryByID(ctx, uint(id))
+	if serviceErr != nil {
+		ctx.JSON(serviceErr.HTTPStatus, serviceErr)
 		return
 	}
 
-	c.Success(ctx, res)
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewCategoryResponse(category)))
 }
 
 func (c *CategoryController) ListCategories(ctx *gin.Context) {
-	res, err := c.categoryService.ListCategories(ctx.Request.Context())
+	categories, err := c.categoryService.ListCategories(ctx)
 	if err != nil {
-		c.ErrorData(ctx, err)
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
 
-	c.Success(ctx, res)
+	var responses []dto.CategoryResponse
+	for _, cat := range categories {
+		responses = append(responses, *dto.NewCategoryResponse(cat))
+	}
+
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(responses))
 }
 
 func (c *CategoryController) UpdateCategory(ctx *gin.Context) {
@@ -90,13 +99,13 @@ func (c *CategoryController) UpdateCategory(ctx *gin.Context) {
 	}
 	req.ID = id
 
-	res, err := c.categoryService.UpdateCategory(ctx.Request.Context(), &req)
+	updatedCategory, err := c.categoryService.UpdateCategory(ctx, uint(id), &req)
 	if err != nil {
-		c.ErrorData(ctx, err)
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
 
-	c.Success(ctx, res)
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewCategoryResponse(updatedCategory)))
 }
 
 func (c *CategoryController) DeleteCategory(ctx *gin.Context) {

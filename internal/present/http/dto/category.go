@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/domain"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 )
 
 type CreateCategoryRequest struct {
@@ -10,8 +10,8 @@ type CreateCategoryRequest struct {
 	ImageID *uint  `json:"image_id"`
 }
 
-func (r *CreateCategoryRequest) ToDomain() *domain.Category {
-	return &domain.Category{
+func (r *CreateCategoryRequest) ToModel() *model.Category {
+	return &model.Category{
 		Name: r.Name,
 		Slug: r.Slug,
 		// ImageID will be handled in service if needed, or domain struct updated to hold ImageID
@@ -34,7 +34,7 @@ type CategoryResponse struct {
 	UpdatedAt string         `json:"updated_at"`
 }
 
-func NewCategoryResponse(category *domain.Category) *CategoryResponse {
+func NewCategoryResponse(category *model.Category) *CategoryResponse {
 	var imageResp *ImageResponse
 	if category.Image != nil {
 		imageResp = NewImageResponse(category.Image)

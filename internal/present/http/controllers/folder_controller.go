@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
+	httpCommon "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -42,12 +43,12 @@ func (c *FolderController) CreateFolder(ctx *gin.Context) {
 		return
 	}
 
-	f, err := c.folderService.CreateFolder(ctx.Request.Context(), req.Name, req.Description)
-	if err != nil {
-		c.ErrorData(ctx, err)
+	if err := c.folderService.CreateFolder(ctx, &req); err != nil {
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
-	ctx.JSON(http.StatusCreated, dto.NewFolderResponse(f))
+
+	ctx.JSON(http.StatusCreated, httpCommon.NewSuccessResponse(nil))
 }
 
 func (c *FolderController) GetFolderByID(ctx *gin.Context) {
@@ -57,12 +58,13 @@ func (c *FolderController) GetFolderByID(ctx *gin.Context) {
 		return
 	}
 
-	f, err := c.folderService.GetFolderByID(ctx.Request.Context(), id)
-	if err != nil {
-		ctx.Error(err)
+	folder, serviceErr := c.folderService.GetFolderByID(ctx, uint(id))
+	if serviceErr != nil {
+		ctx.JSON(serviceErr.HTTPStatus, serviceErr)
 		return
 	}
-	ctx.JSON(http.StatusOK, dto.NewFolderResponse(f))
+
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewFolderResponse(folder)))
 }
 
 func (c *FolderController) ListFolders(ctx *gin.Context) {
@@ -73,19 +75,18 @@ func (c *FolderController) ListFolders(ctx *gin.Context) {
 	}
 	req.Normalize()
 
-	folders, total, err := c.folderService.ListFolders(ctx.Request.Context(), req.Page, req.Size)
+	folders, total, err := c.folderService.ListFolders(ctx, req.Page, req.Size)
 	if err != nil {
-		c.ErrorData(ctx, err)
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
 
-	var res []dto.FolderResponse
+	var responses []dto.FolderResponse
 	for _, f := range folders {
-		res = append(res, *dto.NewFolderResponse(f))
+		responses = append(responses, *dto.NewFolderResponse(f))
 	}
 
-	pag := dto.NewPaginationResponse(res, total, req)
-	ctx.JSON(http.StatusOK, pag)
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewPaginationResponse(responses, total, dto.PaginationRequest{Page: req.Page, Size: req.Size})))
 }
 
 func (c *FolderController) UpdateFolder(ctx *gin.Context) {
@@ -101,12 +102,13 @@ func (c *FolderController) UpdateFolder(ctx *gin.Context) {
 		return
 	}
 
-	updated, err := c.folderService.UpdateFolder(ctx.Request.Context(), id, &req)
+	updatedFolder, err := c.folderService.UpdateFolder(ctx, uint(id), &req)
 	if err != nil {
-		ctx.Error(err)
+		ctx.JSON(err.HTTPStatus, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, dto.NewFolderResponse(updated))
+
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewFolderResponse(updatedFolder)))
 }
 
 func (c *FolderController) DeleteFolder(ctx *gin.Context) {
