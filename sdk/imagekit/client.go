@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/log"
 	"github.com/imagekit-developer/imagekit-go"
 	"github.com/imagekit-developer/imagekit-go/api/uploader"
 )
@@ -155,6 +156,7 @@ func (c *ImageKitClient) UploadFromURL(
 	fileName string,
 	opts *UploadOptions,
 ) (*uploader.UploadResult, error) {
+	logger := log.GetLogger()
 	if url == "" {
 		return nil, fmt.Errorf("url cannot be empty")
 	}
@@ -166,6 +168,10 @@ func (c *ImageKitClient) UploadFromURL(
 			fileName = fmt.Sprintf("upload_%d.jpg", time.Now().Unix())
 		}
 	}
+
+	msg := fmt.Sprintf("Uploading image from URL: %s", url)
+
+	logger.Info(msg)
 
 	// Validate image extension if we can determine it
 	if fileName != "" && !ValidateImageExtension(fileName) {

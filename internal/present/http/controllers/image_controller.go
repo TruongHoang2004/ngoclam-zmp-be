@@ -73,7 +73,7 @@ func (c *ImageController) UploadImage(ctx *gin.Context) {
 // UploadImageFromURL handles image upload from a URL
 func (c *ImageController) UploadImageFromURL(ctx *gin.Context) {
 	var req struct {
-		URL      string `json:"url" binding:"required"`
+		URL      string `json:"url" validator:"required"`
 		FileName string `json:"file_name,omitempty"`
 	}
 
