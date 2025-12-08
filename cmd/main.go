@@ -43,6 +43,7 @@ func main() {
 		bootstrap.BuildService(),
 		bootstrap.BuildController(),
 		bootstrap.BuildValidator(),
+		bootstrap.ConfigModule(),
 		bootstrap.ServerModule,
 		bootstrap.RouterModule,
 	)

@@ -31,15 +31,15 @@ func NewClient(httpClient *http.Client) *Client {
 	}
 }
 
-// GetUserInfo retrieves the user information from Zalo API.
-func (c *Client) GetUserInfo(userAccessToken, token, secretKey string) (*UserInfo, error) {
+// GetPhoneNumber retrieves the user's phone number from Zalo API using the provided token.
+func (c *Client) GetPhoneNumber(accessToken, code, secretKey string) (*UserPhoneNumber, error) {
 	req, err := http.NewRequest(http.MethodGet, c.baseURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("access_token", userAccessToken)
-	req.Header.Set("code", token)
+	req.Header.Set("access_token", accessToken)
+	req.Header.Set("code", code)
 	req.Header.Set("secret_key", secretKey)
 
 	resp, err := c.httpClient.Do(req)
@@ -52,10 +52,10 @@ func (c *Client) GetUserInfo(userAccessToken, token, secretKey string) (*UserInf
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var userInfo UserInfo
-	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+	var phoneNumber UserPhoneNumber
+	if err := json.NewDecoder(resp.Body).Decode(&phoneNumber); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &userInfo, nil
+	return &phoneNumber, nil
 }
