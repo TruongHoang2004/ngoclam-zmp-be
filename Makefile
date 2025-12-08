@@ -41,6 +41,10 @@ migrate-diff:
 migrate-apply:
 	atlas migrate apply --env gorm
 
+# Apply migrations to production (Neon)
+migrate-prod:
+	atlas schema apply --env gorm --url "postgresql://neondb_owner:npg_KwLRlgn3pd5D@ep-plain-resonance-a1adxptm-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+
 # Show migration status
 migrate-status:
 	atlas migrate status --env gorm

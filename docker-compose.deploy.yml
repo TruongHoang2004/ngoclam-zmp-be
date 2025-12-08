@@ -9,17 +9,14 @@ services:
       - ./certs:/etc/nginx/certs
     depends_on:
       - ngoclam-zmp-be
-      # - frontend
 
   ngoclam-zmp-be:
-    build:
-      context: .
+    image: truonghx/ngoclam-be:latest
     container_name: ngoclam-zmp-be
     ports:
       - "8080:8080"
     volumes:
-      - ./.env:/app/.env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - ./api.env:/app/.env
     env_file:
-      - ./.env
+      - ./api.env
+    restart: always
