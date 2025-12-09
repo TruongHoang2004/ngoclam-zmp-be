@@ -7,7 +7,7 @@ on:
 
 jobs:
   docker:
-    runs-on: company
+    runs-on: self-hosted
     outputs:
       short_sha: ${{ steps.commit.outputs.short_sha }}
     steps:
@@ -34,7 +34,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/ngoclam-be:${{ steps.commit.outputs.short_sha }}
 
   deploy:
-    runs-on: company
+    runs-on: self-hosted
     needs: docker
     steps:
       - name: Copy files to server
