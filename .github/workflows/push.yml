@@ -46,3 +46,4 @@ jobs:
           script: |
             cd ~
             sed -i "s|image: ${{ secrets.DOCKERHUB_USERNAME }}/ngoclam-be:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/ngoclam-be:${{ needs.docker.outputs.short_sha }}|g" docker-compose.yml
+            docker compose up -d

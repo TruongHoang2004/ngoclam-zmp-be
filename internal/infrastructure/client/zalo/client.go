@@ -1,10 +1,13 @@
 package zalo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/log"
 )
 
 const (
@@ -32,9 +35,12 @@ func NewClient(httpClient *http.Client) *Client {
 }
 
 // GetPhoneNumber retrieves the user's phone number from Zalo API using the provided token.
-func (c *Client) GetPhoneNumber(accessToken, code, secretKey string) (*UserPhoneNumber, error) {
-	req, err := http.NewRequest(http.MethodGet, c.baseURL, nil)
+func (c *Client) GetPhoneNumber(ctx context.Context, accessToken, code, secretKey string) (*UserPhoneNumberResponse, error) {
+	log.Info(ctx, "GetPhoneNumber start", "baseURL", c.baseURL)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL, nil)
 	if err != nil {
+		log.Error(ctx, "GetPhoneNumber: failed to create request", "error", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -44,18 +50,22 @@ func (c *Client) GetPhoneNumber(accessToken, code, secretKey string) (*UserPhone
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		log.Error(ctx, "GetPhoneNumber: failed to send request", "error", err)
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		log.Error(ctx, "GetPhoneNumber: unexpected status code", "statusCode", resp.StatusCode)
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	var phoneNumber UserPhoneNumber
+	var phoneNumber UserPhoneNumberResponse
 	if err := json.NewDecoder(resp.Body).Decode(&phoneNumber); err != nil {
+		log.Error(ctx, "GetPhoneNumber: failed to decode response", "error", err)
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
+	log.Info(ctx, "GetPhoneNumber success", "phoneNumber", phoneNumber)
 	return &phoneNumber, nil
 }

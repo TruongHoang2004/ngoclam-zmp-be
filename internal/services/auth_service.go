@@ -26,9 +26,9 @@ func NewAuthService(
 	}
 }
 
-func (s *AuthService) DecodePhoneNumber(ctx context.Context, accessToken string, code string) (*zalo.UserPhoneNumber, *common.Error) {
+func (s *AuthService) DecodePhoneNumber(ctx context.Context, accessToken string, code string) (*zalo.UserPhoneNumberResponse, *common.Error) {
 
-	phoneNumber, err := s.zaloClient.GetPhoneNumber(accessToken, code, s.cfg.ZaloAppSecret)
+	phoneNumber, err := s.zaloClient.GetPhoneNumber(ctx, accessToken, code, s.cfg.ZaloAppSecret)
 	if err != nil {
 		return nil, common.ErrSystemError(ctx, err.Error()).SetSource(common.CurrentService)
 	}

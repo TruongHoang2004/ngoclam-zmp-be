@@ -13,6 +13,12 @@ type UserInfo struct {
 	Gender   string `json:"gender"`
 }
 
-type UserPhoneNumber struct {
+type UserPhoneNumberData struct {
 	Number string `json:"number"`
+}
+
+type UserPhoneNumberResponse struct {
+	Data    UserPhoneNumberData `json:"data"`
+	Error   int                 `json:"error"`
+	Message string              `json:"message"`
 }

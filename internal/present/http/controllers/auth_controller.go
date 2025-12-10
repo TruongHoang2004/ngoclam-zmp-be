@@ -45,5 +45,5 @@ func (c *AuthController) DecodePhoneNumber(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewDecodePhoneNumberResponse(phoneNumber)))
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(dto.NewDecodePhoneNumberResponse(phoneNumber.Data.Number)))
 }
