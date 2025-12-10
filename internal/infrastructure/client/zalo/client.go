@@ -48,6 +48,8 @@ func (c *Client) GetPhoneNumber(ctx context.Context, accessToken, code, secretKe
 	req.Header.Set("code", code)
 	req.Header.Set("secret_key", secretKey)
 
+	log.Debug(ctx, "GetPhoneNumber request", "request", req)
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		log.Error(ctx, "GetPhoneNumber: failed to send request", "error", err)
