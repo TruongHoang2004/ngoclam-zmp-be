@@ -11,7 +11,6 @@ type Config struct {
 	Mode               string
 	DBUrl              string
 	AppPort            string
-	BasePath           string
 	ImageKitPrivateKey string
 	ImageKitPublicKey  string
 	ImageKitEndpoint   string
@@ -28,7 +27,6 @@ func InitConfig() *Config {
 		Mode:               getEnv("APP_MODE", "development"),
 		DBUrl:              getEnv("DB_URL", ""),
 		AppPort:            getEnv("APP_PORT", "8080"),
-		BasePath:           getEnv("BASE_PATH", "./uploads"),
 		ImageKitPrivateKey: getEnv("IMAGEKIT_PRIVATE_KEY", ""),
 		ImageKitPublicKey:  getEnv("IMAGEKIT_PUBLIC_KEY", ""),
 		ImageKitEndpoint:   getEnv("IMAGEKIT_ENDPOINT_URL", ""),
