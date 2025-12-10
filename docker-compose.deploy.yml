@@ -7,11 +7,13 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ./certs:/etc/nginx/certs
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     depends_on:
       - ngoclam-zmp-be
 
   ngoclam-zmp-be:
-    image: truonghx/ngoclam-be:latest
+    image: truonghx/ngoclam-be:b66cb5a
     container_name: ngoclam-zmp-be
     ports:
       - "8080:8080"
