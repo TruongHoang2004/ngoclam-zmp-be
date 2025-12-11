@@ -12,5 +12,6 @@ func BuildRepository() fx.Option {
 		repositories.NewImageRepository,
 		repositories.NewFolderRepository,
 		repositories.NewCategoryRepository,
+		repositories.NewOrderRepository,
 	)
 }

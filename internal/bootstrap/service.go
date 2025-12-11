@@ -13,5 +13,6 @@ func BuildService() fx.Option {
 		services.NewProductService,
 		services.NewCategoryService,
 		services.NewAuthService,
+		services.NewOrderService,
 	)
 }
