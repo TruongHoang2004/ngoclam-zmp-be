@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils/casting"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repositories"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 )
@@ -28,47 +26,39 @@ func NewPaymentService(orderRepo *repositories.OrderRepository, cfg *config.Conf
 
 func (s *PaymentService) ProcessZaloCallback(ctx context.Context, req *dto.ZaloCallbackRequest) (*dto.ZaloCallbackResponse, *common.Error) {
 	// 1. Verify Message Authentication Code (HMAC-SHA256)
-	mac := utils.ComputeHmac256(req.Data, s.cfg.ZaloAppSecret)
+	// dataForMac = "appId={appId}&amount={amount}&description={description}&orderId={orderId}&message={message}&resultCode={resultCode}&transId={transId}"
+	dataForMac := fmt.Sprintf("appId=%s&amount=%d&description=%s&orderId=%s&message=%s&resultCode=%d&transId=%s",
+		req.AppID, req.Amount, req.Description, req.OrderID, req.Message, req.ResultCode, req.TransID)
+
+	mac := utils.ComputeHmac256(dataForMac, s.cfg.ZaloAppSecret)
 	if mac != req.Mac {
+		// Log for debugging?
+		fmt.Printf("Invalid MAC: calculated %s, received %s\n", mac, req.Mac)
 		return &dto.ZaloCallbackResponse{
 			ReturnCode:    -1,
 			ReturnMessage: "mac not equal",
 		}, nil
 	}
 
-	// 2. Parse Data
-	var dataMap map[string]interface{}
-	if err := json.Unmarshal([]byte(req.Data), &dataMap); err != nil {
+	// 2. Parse Extradata to get Order ID
+	// Extradata: {"pk_order_id": 123}
+	var extraDataMap map[string]interface{}
+	if err := json.Unmarshal([]byte(req.Extradata), &extraDataMap); err != nil {
 		return &dto.ZaloCallbackResponse{
 			ReturnCode:    -1,
-			ReturnMessage: "invalid data format",
+			ReturnMessage: "invalid extradata format",
 		}, nil
 	}
 
-	appTransID, ok := dataMap["app_trans_id"].(string)
+	pkOrderIDFloat, ok := extraDataMap["pk_order_id"].(float64)
 	if !ok {
+		// Fallback to string check?
 		return &dto.ZaloCallbackResponse{
 			ReturnCode:    -1,
-			ReturnMessage: "app_trans_id not found",
+			ReturnMessage: "pk_order_id not found in extradata",
 		}, nil
 	}
-
-	parts := strings.Split(appTransID, "_")
-	if len(parts) < 2 {
-		return &dto.ZaloCallbackResponse{
-			ReturnCode:    -1,
-			ReturnMessage: "invalid app_trans_id format",
-		}, nil
-	}
-
-	orderIDStr := parts[1]
-	orderID, err := casting.StringToUint(orderIDStr)
-	if err != nil {
-		return &dto.ZaloCallbackResponse{
-			ReturnCode:    -1,
-			ReturnMessage: "invalid order id in app_trans_id",
-		}, nil
-	}
+	orderID := uint(pkOrderIDFloat)
 
 	// 3. Update Order Satus
 	order, errSvc := s.orderRepository.GetOrder(ctx, orderID)
@@ -87,14 +77,14 @@ func (s *PaymentService) ProcessZaloCallback(ctx context.Context, req *dto.ZaloC
 		}, nil
 	}
 
-	order.Status = "success"
-	// Optional: store transaction ID from Zalo
-	if zpTransID, ok := dataMap["zp_trans_id"].(string); ok {
-		order.TransactionID = &zpTransID
-	} else if zpTransIDFloat, ok := dataMap["zp_trans_id"].(float64); ok {
-		val := fmt.Sprintf("%.0f", zpTransIDFloat)
-		order.TransactionID = &val
+	if req.ResultCode == 1 {
+		order.Status = "success"
+	} else {
+		order.Status = "failed" // or other status
 	}
+
+	// Store Zalo Trans ID
+	order.TransactionID = &req.TransID
 
 	if errSvc := s.orderRepository.UpdateOrder(ctx, order); errSvc != nil {
 		return &dto.ZaloCallbackResponse{

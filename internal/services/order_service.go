@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
@@ -104,21 +104,58 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 		return nil, err
 	}
 
-	// 4. Generate MAC
-	// Format: app_trans_id = YYMMDD_OrderID
-	// MAC = hmac256(app_trans_id, secret) assuming simplified requirement.
-	// If full ZaloPay format is needed, we need more params.
-	// Users asked "save order method return a mac".
-	// Construct app_trans_id
-	currentTime := time.Now()
-	dateStr := currentTime.Format("060102") // YYMMDD
-	appTransID := fmt.Sprintf("%s_%d", dateStr, order.ID)
+	// 4. Generate Zalo Params
+	// Parameters: amount, desc, item, extradata, method
+	amount := order.TotalAmount.IntPart()
+	desc := fmt.Sprintf("Thanh toan don hang #%d", order.ID)
 
-	mac := utils.ComputeHmac256(appTransID, s.cfg.ZaloAppSecret)
+	// Item: JSON string of items (simplified)
+	itemMap := []map[string]interface{}{}
+	for _, it := range order.OrderItems {
+		itemMap = append(itemMap, map[string]interface{}{
+			"id":       it.ProductSnapshot.ProductID,
+			"name":     it.ProductSnapshot.Name,
+			"price":    it.Price,
+			"quantity": it.Quantity,
+		})
+	}
+	itemBytes, _ := json.Marshal(itemMap)
+	itemStr := string(itemBytes)
+
+	// Extradata: {"pk_order_id": order.ID}
+	extraDataMap := map[string]interface{}{
+		"pk_order_id": order.ID,
+	}
+	extraDataBytes, _ := json.Marshal(extraDataMap)
+	extraDataStr := string(extraDataBytes)
+
+	methodStr := "{}" // Default empty method or custom
+
+	// MAC Generation: sort keys -> key=value -> join & -> hmac
+	// Keys: amount, desc, extradata, item, method
+	// Note: value should be stringified if object, but here we prepared strings.
+	// doc: "Dữ liệu extradata và method phải có kiểu dữ liệu JSON String"
+
+	// Manual construction to ensure order
+	// Sorted keys: amount, desc, extradata, item, method
+	dataMac := fmt.Sprintf("amount=%d&desc=%s&extradata=%s&item=%s&method=%s",
+		amount, desc, extraDataStr, itemStr, methodStr)
+
+	mac := utils.ComputeHmac256(dataMac, s.cfg.ZaloAppSecret)
+
+	zaloParams := &dto.ZaloOrderParams{
+		Amount:    amount,
+		Desc:      desc,
+		Item:      itemStr,
+		Extradata: extraDataStr,
+		Method:    methodStr,
+		Mac:       mac,
+	}
 
 	return &dto.CreateOrderResponse{
-		Order: order,
-		MAC:   mac,
+		Order:      order,
+		ZaloParams: zaloParams,
+		MAC:        mac,
 	}, nil
 }
 

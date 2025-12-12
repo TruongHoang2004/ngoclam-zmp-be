@@ -31,7 +31,17 @@ type OrderResponse struct {
 	UpdatedAt   time.Time       `json:"updated_at"`
 }
 
+type ZaloOrderParams struct {
+	Amount    int64  `json:"amount"`
+	Desc      string `json:"desc"`
+	Item      string `json:"item"`
+	Extradata string `json:"extradata"`
+	Method    string `json:"method"`
+	Mac       string `json:"mac"`
+}
+
 type CreateOrderResponse struct {
 	*model.Order
-	MAC string `json:"mac"`
+	ZaloParams *ZaloOrderParams `json:"zalo_params"`
+	MAC        string           `json:"mac"` // Deprecated but keeping for now
 }
