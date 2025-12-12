@@ -129,7 +129,12 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 	extraDataBytes, _ := json.Marshal(extraDataMap)
 	extraDataStr := string(extraDataBytes)
 
-	methodStr := "{}" // Default empty method or custom
+	methodMap := map[string]interface{}{
+		"id":       "BANK",
+		"isCustom": false,
+	}
+	methodBytes, _ := json.Marshal(methodMap)
+	methodStr := string(methodBytes)
 
 	// MAC Generation: sort keys -> key=value -> join & -> hmac
 	// Keys: amount, desc, extradata, item, method
