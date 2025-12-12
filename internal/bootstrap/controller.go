@@ -11,11 +11,12 @@ func BuildController() fx.Option {
 	return fx.Options(
 		fx.Provide(controllers.NewBaseController),
 		fx.Provide(controllers.NewFolderController),
+		fx.Provide(controllers.NewOrderController),
+		fx.Provide(controllers.NewPaymentController),
 		fx.Provide(controllers.NewProductController),
 		fx.Provide(controllers.NewImageController),
 		fx.Provide(controllers.NewCategoryController),
-		fx.Provide(controllers.NewAuthController,
-			controllers.NewOrderController),
+		fx.Provide(controllers.NewAuthController),
 	)
 }
 

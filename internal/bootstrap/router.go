@@ -16,6 +16,7 @@ func registerRoutes(
 	categoryController *controllers.CategoryController,
 	authController *controllers.AuthController,
 	orderController *controllers.OrderController,
+	paymentController *controllers.PaymentController,
 ) {
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
@@ -27,6 +28,7 @@ func registerRoutes(
 	categoryController.RegisterRoutes(r)
 	authController.RegisterRoutes(r)
 	orderController.RegisterRoutes(r)
+	paymentController.RegisterRoutes(r)
 }
 
 var RouterModule = fx.Options(

@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 	"github.com/shopspring/decimal"
 )
 
@@ -28,4 +29,9 @@ type OrderResponse struct {
 	Status      string          `json:"status"`
 	CreatedAt   time.Time       `json:"created_at"`
 	UpdatedAt   time.Time       `json:"updated_at"`
+}
+
+type CreateOrderResponse struct {
+	*model.Order
+	MAC string `json:"mac"`
 }
