@@ -145,8 +145,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 	// Sorted keys: amount, desc, extradata, item, method
 	dataMac := fmt.Sprintf("amount=%d&desc=%s&extradata=%s&item=%s&method=%s",
 		amount, desc, extraDataStr, itemStr, methodStr)
+	fmt.Println(dataMac)
 
 	mac := utils.ComputeHmac256(dataMac, s.cfg.ZaloAppSecret)
+	fmt.Println(mac)
 
 	zaloParams := &dto.ZaloOrderParams{
 		Amount:    amount,
