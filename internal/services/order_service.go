@@ -111,16 +111,23 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 	desc := fmt.Sprintf("Thanh toan don hang #%d", order.ID)
 
 	// Item: JSON string of items (simplified)
-	itemMap := []map[string]interface{}{}
+	type zaloItem struct {
+		ID       string `json:"id"`
+		Amount   int64  `json:"amount"`
+		Name     string `json:"name"`
+		Quantity int    `json:"quantity"`
+	}
+
+	var items []zaloItem
 	for _, it := range order.OrderItems {
-		itemMap = append(itemMap, map[string]interface{}{
-			"id":       it.ProductSnapshot.ProductID,
-			"name":     it.ProductSnapshot.Name,
-			"price":    it.Price,
-			"quantity": it.Quantity,
+		items = append(items, zaloItem{
+			ID:       fmt.Sprintf("%d", it.ProductSnapshot.ProductID),
+			Amount:   it.Price.IntPart(),
+			Name:     it.ProductSnapshot.Name,
+			Quantity: it.Quantity,
 		})
 	}
-	itemBytes, _ := json.Marshal(itemMap)
+	itemBytes, _ := json.Marshal(items)
 	itemStr := string(itemBytes)
 
 	// Extradata: {"pk_order_id": order.ID}
@@ -146,10 +153,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 	// Sorted keys: amount, desc, extradata, item, method
 	dataMac := fmt.Sprintf("amount=%d&desc=%s&extradata=%s&item=%s&method=%s",
 		amount, desc, extraDataStr, itemStr, methodStr)
-	log.Debug(fmt.Sprintf("dataMac: %s", dataMac))
+	log.Debug(ctx, "dataMac: %s", dataMac)
 
 	mac := utils.ComputeHmac256(dataMac, s.cfg.ZaloAppSecret)
-	log.Debug(fmt.Sprintf("mac: %s", mac))
+	log.Debug(ctx, "mac: %s", mac)
 
 	zaloParams := &dto.ZaloOrderParams{
 		Amount:    amount,
