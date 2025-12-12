@@ -54,3 +54,10 @@ func (r *OrderRepository) ListOrders(ctx context.Context, offset int, limit int)
 
 	return orders, total, nil
 }
+
+func (r *OrderRepository) UpdateOrder(ctx context.Context, order *model.Order) *common.Error {
+	if err := r.db.Save(order).Error; err != nil {
+		return common.ErrSystemError(ctx, err.Error())
+	}
+	return nil
+}

@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	httpCommon "github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
@@ -78,5 +79,22 @@ func (c *OrderController) RegisterRoutes(r *gin.RouterGroup) {
 		orders.POST("", c.CreateOrder)
 		orders.GET("", c.ListOrders)
 		orders.GET("/:id", c.GetOrder)
+		orders.POST("/zalo-callback", c.ZaloCallback)
 	}
+}
+
+func (c *OrderController) ZaloCallback(ctx *gin.Context) {
+	var req dto.ZaloCallbackRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		c.ErrorData(ctx, common.ErrBadRequest(ctx.Request.Context()).SetDetail(err.Error()))
+		return
+	}
+
+	res, err := c.orderService.ProcessZaloCallback(ctx.Request.Context(), &req)
+	if err != nil {
+		c.ErrorData(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
 }
