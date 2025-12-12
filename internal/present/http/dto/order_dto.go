@@ -7,19 +7,19 @@ import (
 )
 
 type CustomerInfoRequest struct {
-	Name    string `json:"name" binding:"required"`
-	Phone   string `json:"phone" binding:"required"`
-	Address string `json:"address" binding:"required"`
+	Name    string `json:"name" validate:"required"`
+	Phone   string `json:"phone" validate:"required"`
+	Address string `json:"address" validate:"required"`
 }
 
 type OrderItemRequest struct {
-	ProductID uint `json:"product_id" binding:"required"`
-	Quantity  int  `json:"quantity" binding:"required,gt=0"`
+	ProductID uint `json:"product_id" validate:"required"`
+	Quantity  int  `json:"quantity" validate:"required,gt=0"`
 }
 
 type CreateOrderRequest struct {
-	CustomerInfo CustomerInfoRequest `json:"customer_info" binding:"required"`
-	Items        []OrderItemRequest  `json:"items" binding:"required,dive"`
+	CustomerInfo CustomerInfoRequest `json:"customer_info" validate:"required"`
+	Items        []OrderItemRequest  `json:"items" validate:"required,dive"`
 }
 
 type OrderResponse struct {
