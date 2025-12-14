@@ -19,7 +19,7 @@ type OrderItemRequest struct {
 }
 
 type PaymentRequest struct {
-	PaymentMethod string `json:"payment_method" validate:"required"`
+	Method string `json:"method" validate:"required"`
 }
 
 type CreateOrderRequest struct {
