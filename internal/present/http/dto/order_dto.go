@@ -18,9 +18,14 @@ type OrderItemRequest struct {
 	Quantity  int  `json:"quantity" validate:"required,gt=0"`
 }
 
+type PaymentRequest struct {
+	PaymentMethod string `json:"payment_method" validate:"required"`
+}
+
 type CreateOrderRequest struct {
 	CustomerInfo CustomerInfoRequest `json:"customer_info" validate:"required"`
 	Items        []OrderItemRequest  `json:"items" validate:"required,dive"`
+	Payment      PaymentRequest      `json:"payment" validate:"required"`
 }
 
 type OrderResponse struct {

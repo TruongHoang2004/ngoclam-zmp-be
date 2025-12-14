@@ -138,7 +138,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 	extraDataStr := string(extraDataBytes)
 
 	methodMap := map[string]interface{}{
-		"id":       "BANK",
+		"id":       req.Payment.PaymentMethod,
 		"isCustom": false,
 	}
 	methodBytes, _ := json.Marshal(methodMap)
