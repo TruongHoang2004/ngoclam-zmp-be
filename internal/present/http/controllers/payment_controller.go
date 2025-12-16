@@ -23,13 +23,30 @@ func NewPaymentController(baseController *baseController, paymentService *servic
 
 func (c *PaymentController) ZaloCallback(ctx *gin.Context) {
 
-	var req dto.ZaloCallbackRequest
+	var req dto.NofityCallbackRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.ErrorData(ctx, common.ErrBadRequest(ctx.Request.Context()).SetDetail(err.Error()))
 		return
 	}
 
-	res, err := c.paymentService.ProcessZaloCallback(ctx.Request.Context(), &req)
+	res, err := c.paymentService.ProcessNotifyCallback(ctx.Request.Context(), &req)
+	if err != nil {
+		c.ErrorData(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (c *PaymentController) OrderCallback(ctx *gin.Context) {
+
+	var req dto.OrderCallbackRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		c.ErrorData(ctx, common.ErrBadRequest(ctx.Request.Context()).SetDetail(err.Error()))
+		return
+	}
+
+	res, err := c.paymentService.ProcessOrderCallback(ctx.Request.Context(), &req)
 	if err != nil {
 		c.ErrorData(ctx, err)
 		return
@@ -41,6 +58,7 @@ func (c *PaymentController) ZaloCallback(ctx *gin.Context) {
 func (c *PaymentController) RegisterRoutes(r *gin.RouterGroup) {
 	payment := r.Group("/payment")
 	{
-		payment.POST("/zalo-callback", c.ZaloCallback)
+		payment.POST("/notify-callback", c.ZaloCallback)
+		payment.POST("/order-callback", c.OrderCallback)
 	}
 }
