@@ -52,8 +52,8 @@ func (c *ZaloPaymentClient) GetOrderStatus(ctx context.Context, config *config.C
 	targetURL := c.baseURL + "/transaction/get-status"
 
 	params := url.Values{}
-	params.Add("app_id", config.ZaloAppID)
-	params.Add("order_id", orderId)
+	params.Add("appId", config.ZaloAppID)
+	params.Add("orderId", orderId)
 	params.Add("mac", mac)
 
 	targetURLWithParams := targetURL + "?" + params.Encode()
