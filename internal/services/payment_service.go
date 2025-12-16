@@ -11,6 +11,7 @@ import (
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/log"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/client/zalo/payment"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/model"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repositories"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 )
@@ -80,9 +81,26 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	log.Debug(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s status: %v\n", zaloOrderID, orderStatus))
 
 	// Only proceed if payment is successful
-	if orderStatus.Err != 0 || orderStatus.Data.ReturnCode != 1 {
-		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s not successful or error. ReturnCode: %d, Error: %d\n",
-			zaloOrderID, orderStatus.Data.ReturnCode, orderStatus.Err))
+	if orderStatus.Err != 0 {
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s error. Error: %d\n",
+			zaloOrderID, orderStatus.Err))
+		return
+	}
+
+	currentStatus := model.OrderStatusPending
+	if orderStatus.Data.ReturnCode == 1 {
+		currentStatus = model.OrderStatusCompleted
+	}
+	if orderStatus.Data.ReturnCode == 0 {
+		currentStatus = model.OrderStatusProcessing
+	}
+	if orderStatus.Data.ReturnCode == -1 {
+		currentStatus = model.OrderStatusFailed
+	}
+
+	if orderStatus.Data.ReturnCode != 1 {
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s not successful. ReturnCode: %d\n",
+			zaloOrderID, orderStatus.Data.ReturnCode))
 		return
 	}
 
@@ -108,12 +126,12 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	}
 
 	// Idempotency check
-	if order.Status == "success" {
+	if order.Status == string(model.OrderStatusCompleted) {
 		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %d already success\n", orderID))
 		return
 	}
 
-	order.Status = "success"
+	order.Status = string(currentStatus)
 	// Ensure TransactionID is set if missing
 	if order.TransactionID == nil || *order.TransactionID == "" {
 		transID := orderStatus.Data.TransID // Assuming TransID is available in status response
