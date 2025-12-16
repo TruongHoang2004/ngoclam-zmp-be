@@ -45,9 +45,9 @@ func (c *ZaloPaymentClient) GetOrderStatus(ctx context.Context, config *config.C
 	// Calculate MAC
 	// data = "appId={appId}&orderId={orderId}&privateKey={privateKey}"
 	dataForMac := fmt.Sprintf("appId=%s&orderId=%s&privateKey=%s",
-		config.ZaloAppID, orderId, config.ZaloAppKey)
+		config.ZaloAppID, orderId, config.ZaloAppPrivateKey)
 
-	mac := utils.ComputeHmac256(dataForMac, config.ZaloAppKey)
+	mac := utils.ComputeHmac256(dataForMac, config.ZaloAppPrivateKey)
 
 	targetURL := c.baseURL + "/transaction/get-status"
 

@@ -155,7 +155,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 		amount, desc, extraDataStr, itemStr, methodStr)
 	log.Debug(ctx, "dataMac: %s", dataMac)
 
-	mac := utils.ComputeHmac256(dataMac, s.cfg.ZaloAppKey)
+	mac := utils.ComputeHmac256(dataMac, s.cfg.ZaloAppPrivateKey)
 	log.Debug(ctx, "mac: %s", mac)
 
 	zaloParams := &dto.ZaloOrderParams{

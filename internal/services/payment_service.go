@@ -43,7 +43,7 @@ func (s *PaymentService) ProcessNotifyCallback(ctx context.Context, req *dto.Nof
 	dataForMac := fmt.Sprintf("appId=%s&orderId=%s&method=%s",
 		req.Data.AppID, req.Data.OrderID, req.Data.Method)
 
-	mac := utils.ComputeHmac256(dataForMac, s.cfg.ZaloAppSecret)
+	mac := utils.ComputeHmac256(dataForMac, s.cfg.ZaloAppPrivateKey)
 	if mac != req.Mac {
 		// Log for debugging
 		log.Debug(ctx, fmt.Sprintf("dataForMac: %s\n", dataForMac))
