@@ -63,8 +63,8 @@ func (s *PaymentService) ProcessNotifyCallback(ctx context.Context, req *dto.Nof
 }
 
 func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
-	// Wait for 5 minutes
-	time.Sleep(5 * time.Minute)
+	// Wait for 1 minutes
+	time.Sleep(1 * time.Minute)
 
 	ctx := context.Background()
 	log.Debug(ctx, fmt.Sprintf("Starting deferred check for Zalo Order ID: %s\n", zaloOrderID))
