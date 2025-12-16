@@ -98,12 +98,6 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 		currentStatus = model.OrderStatusFailed
 	}
 
-	if orderStatus.Data.ReturnCode != 1 {
-		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s not successful. ReturnCode: %d\n",
-			zaloOrderID, orderStatus.Data.ReturnCode))
-		return
-	}
-
 	// Parse ExtraData to get internal Order ID
 	var extraDataMap map[string]interface{}
 	if err := json.Unmarshal([]byte(orderStatus.Data.Extradata), &extraDataMap); err != nil {
