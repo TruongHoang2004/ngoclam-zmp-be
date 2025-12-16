@@ -46,6 +46,7 @@ func (s *PaymentService) ProcessNotifyCallback(ctx context.Context, req *dto.Nof
 	mac := utils.ComputeHmac256(dataForMac, s.cfg.ZaloAppSecret)
 	if mac != req.Mac {
 		// Log for debugging
+		log.Debug(ctx, fmt.Sprintf("dataForMac: %s\n", dataForMac))
 		log.Error(ctx, fmt.Sprintf("Invalid MAC: calculated %s, received %s\n", mac, req.Mac))
 		return &dto.NofityCallbackResponse{
 			ReturnCode:    -1,
