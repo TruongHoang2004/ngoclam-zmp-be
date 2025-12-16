@@ -8,6 +8,7 @@ import (
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/log"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/client/zalo/payment"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repositories"
@@ -66,32 +67,32 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	time.Sleep(5 * time.Minute)
 
 	ctx := context.Background()
-	fmt.Printf("Starting deferred check for Zalo Order ID: %s\n", zaloOrderID)
+	log.Debug(ctx, fmt.Sprintf("Starting deferred check for Zalo Order ID: %s\n", zaloOrderID))
 
 	// Get Order Status from Zalo
 	orderStatus, err := s.zaloPaymentClient.GetOrderStatus(ctx, s.cfg, zaloOrderID)
 	if err != nil {
-		fmt.Printf("deferredCheckOrderStatus: failed to get status for %s: %v\n", zaloOrderID, err)
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to get status for %s: %v\n", zaloOrderID, err))
 		return
 	}
 
 	// Only proceed if payment is successful
 	if orderStatus.Error != 0 || orderStatus.Data.ReturnCode != 1 {
-		fmt.Printf("deferredCheckOrderStatus: order %s not successful or error. ReturnCode: %d, Error: %d\n",
-			zaloOrderID, orderStatus.Data.ReturnCode, orderStatus.Error)
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s not successful or error. ReturnCode: %d, Error: %d\n",
+			zaloOrderID, orderStatus.Data.ReturnCode, orderStatus.Error))
 		return
 	}
 
 	// Parse ExtraData to get internal Order ID
 	var extraDataMap map[string]interface{}
 	if err := json.Unmarshal([]byte(orderStatus.Data.ExtraData), &extraDataMap); err != nil {
-		fmt.Printf("deferredCheckOrderStatus: failed to parse extradata for %s: %v\n", zaloOrderID, err)
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to parse extradata for %s: %v\n", zaloOrderID, err))
 		return
 	}
 
 	pkOrderIDFloat, ok := extraDataMap["pk_order_id"].(float64)
 	if !ok {
-		fmt.Printf("deferredCheckOrderStatus: pk_order_id not found in extradata for %s\n", zaloOrderID)
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: pk_order_id not found in extradata for %s\n", zaloOrderID))
 		return
 	}
 	orderID := uint(pkOrderIDFloat)
@@ -99,13 +100,13 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	// Update Order Status in DB
 	order, errSvc := s.orderRepository.GetOrder(ctx, orderID)
 	if errSvc != nil {
-		fmt.Printf("deferredCheckOrderStatus: failed to get order %d: %v\n", orderID, errSvc)
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to get order %d: %v\n", orderID, errSvc))
 		return
 	}
 
 	// Idempotency check
 	if order.Status == "success" {
-		fmt.Printf("deferredCheckOrderStatus: order %d already success\n", orderID)
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %d already success\n", orderID))
 		return
 	}
 
@@ -117,11 +118,11 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	}
 
 	if errSvc := s.orderRepository.UpdateOrder(ctx, order); errSvc != nil {
-		fmt.Printf("deferredCheckOrderStatus: failed to update order %d: %v\n", orderID, errSvc)
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to update order %d: %v\n", orderID, errSvc))
 		return
 	}
 
-	fmt.Printf("deferredCheckOrderStatus: successfully updated order %d to success\n", orderID)
+	log.Info(ctx, fmt.Sprintf("deferredCheckOrderStatus: successfully updated order %d to success\n", orderID))
 }
 
 func (s *PaymentService) ProcessOrderCallback(ctx context.Context, req *dto.OrderCallbackRequest) (*dto.OrderCallbackResponse, *common.Error) {
@@ -132,7 +133,7 @@ func (s *PaymentService) ProcessOrderCallback(ctx context.Context, req *dto.Orde
 
 	mac := utils.ComputeHmac256(dataForMac, s.cfg.ZaloAppSecret)
 	if mac != req.Mac {
-		fmt.Printf("Invalid MAC: calculated %s, received %s\n", mac, req.Mac)
+		log.Error(ctx, fmt.Sprintf("Invalid MAC: calculated %s, received %s\n", mac, req.Mac))
 		return &dto.OrderCallbackResponse{
 			ReturnCode:    -1,
 			ReturnMessage: "mac not equal",
