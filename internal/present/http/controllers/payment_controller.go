@@ -22,6 +22,7 @@ func NewPaymentController(baseController *baseController, paymentService *servic
 }
 
 func (c *PaymentController) ZaloCallback(ctx *gin.Context) {
+
 	var req dto.ZaloCallbackRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.ErrorData(ctx, common.ErrBadRequest(ctx.Request.Context()).SetDetail(err.Error()))

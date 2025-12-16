@@ -49,6 +49,15 @@ func (b *baseController) GetUintParam(c *gin.Context, key string) (uint, *common
 	return id, nil
 }
 
+func (b *baseController) GetStringParams(c *gin.Context, key string) (string, *common.Error) {
+	param := c.Param(key)
+	if param == "" {
+		log.Warn(c, "param %s is empty", key)
+		return "", common.ErrBadRequest(c).SetDetail(fmt.Sprintf("param %s is empty", key)).SetSource(common.CurrentService)
+	}
+	return param, nil
+}
+
 func (b *baseController) GetFile(c *gin.Context, key string) (*multipart.FileHeader, *common.Error) {
 	file, err := c.FormFile(key)
 	if err != nil {
