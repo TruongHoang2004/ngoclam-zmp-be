@@ -24,8 +24,9 @@ type GetOrderStatusRequest struct {
 }
 
 type GetOrderStatusResponse struct {
-	Error int `json:"error"`
-	Data  struct {
+	Msg  string `json:"msg"`
+	Err  int    `json:"err"`
+	Data struct {
 		ReturnCode      int    `json:"returnCode"`
 		ReturnMessage   string `json:"returnMessage"`
 		IsProcessing    bool   `json:"isProcessing"`
@@ -34,6 +35,9 @@ type GetOrderStatusResponse struct {
 		Amount          int64  `json:"amount"`
 		TransTime       int64  `json:"transTime"`
 		MerchantTransID string `json:"merchantTransId"`
-		ExtraData       string `json:"extraData"`
+		Extradata       string `json:"extradata"`
+		SubResultCode   int    `json:"subResultCode"`
+		UpdateAt        int64  `json:"updateAt"`
+		CreateAt        int64  `json:"createAt"`
 	} `json:"data"`
 }

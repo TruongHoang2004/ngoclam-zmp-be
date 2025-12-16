@@ -80,15 +80,15 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	log.Debug(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s status: %v\n", zaloOrderID, orderStatus))
 
 	// Only proceed if payment is successful
-	if orderStatus.Error != 0 || orderStatus.Data.ReturnCode != 1 {
+	if orderStatus.Err != 0 || orderStatus.Data.ReturnCode != 1 {
 		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s not successful or error. ReturnCode: %d, Error: %d\n",
-			zaloOrderID, orderStatus.Data.ReturnCode, orderStatus.Error))
+			zaloOrderID, orderStatus.Data.ReturnCode, orderStatus.Err))
 		return
 	}
 
 	// Parse ExtraData to get internal Order ID
 	var extraDataMap map[string]interface{}
-	if err := json.Unmarshal([]byte(orderStatus.Data.ExtraData), &extraDataMap); err != nil {
+	if err := json.Unmarshal([]byte(orderStatus.Data.Extradata), &extraDataMap); err != nil {
 		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to parse extradata for %s: %v\n", zaloOrderID, err))
 		return
 	}
