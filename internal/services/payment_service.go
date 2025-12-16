@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
@@ -99,8 +100,14 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	}
 
 	// Parse ExtraData to get internal Order ID
+	decodedExtradata, err := url.QueryUnescape(orderStatus.Data.Extradata)
+	if err != nil {
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to unescape extradata for %s: %v\n", zaloOrderID, err))
+		return
+	}
+
 	var extraDataMap map[string]interface{}
-	if err := json.Unmarshal([]byte(orderStatus.Data.Extradata), &extraDataMap); err != nil {
+	if err := json.Unmarshal([]byte(decodedExtradata), &extraDataMap); err != nil {
 		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to parse extradata for %s: %v\n", zaloOrderID, err))
 		return
 	}
