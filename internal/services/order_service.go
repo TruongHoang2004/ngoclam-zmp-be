@@ -182,13 +182,3 @@ func (s *OrderService) ListOrders(ctx context.Context, page int, size int) ([]*m
 func (s *OrderService) GetOrder(ctx context.Context, id uint) (*model.Order, *common.Error) {
 	return s.orderRepository.GetOrder(ctx, id)
 }
-
-func (s *OrderService) SubmitOrder(ctx context.Context, req *dto.OrderSubmitRequest) *common.Error {
-	orders, err := s.orderRepository.GetOrder(ctx, req.OrderID)
-	if err != nil {
-		return err
-	}
-	orders.Status = string(model.OrderStatusPaid)
-	orders.ZaloOrderID = &req.ZaloOrderID
-	return s.orderRepository.UpdateOrder(ctx, orders)
-}

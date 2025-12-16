@@ -5,18 +5,18 @@ import (
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/client/zalo"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/client/zalo/info"
 )
 
 type AuthService struct {
 	*baseService
-	zaloClient *zalo.Client
+	zaloClient *info.ZaloInfoClient
 	cfg        *config.Config
 }
 
 func NewAuthService(
 	baseService *baseService,
-	zaloClient *zalo.Client,
+	zaloClient *info.ZaloInfoClient,
 	cfg *config.Config,
 ) *AuthService {
 	return &AuthService{
@@ -26,7 +26,7 @@ func NewAuthService(
 	}
 }
 
-func (s *AuthService) DecodePhoneNumber(ctx context.Context, accessToken string, code string) (*zalo.UserPhoneNumberResponse, *common.Error) {
+func (s *AuthService) DecodePhoneNumber(ctx context.Context, accessToken string, code string) (*info.UserPhoneNumberResponse, *common.Error) {
 
 	phoneNumber, err := s.zaloClient.GetPhoneNumber(ctx, accessToken, code, s.cfg.ZaloAppSecret)
 	if err != nil {

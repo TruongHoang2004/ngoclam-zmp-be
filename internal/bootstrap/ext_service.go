@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/client/zalo"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/client/zalo/info"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/client/zalo/payment"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/sdk/imagekit"
 	"go.uber.org/fx"
 )
@@ -17,6 +18,7 @@ func BuildExtServicesModules() fx.Option {
 			}
 		}),
 		fx.Provide(imagekit.NewImageKitClient),
-		fx.Provide(zalo.NewClient),
+		fx.Provide(info.NewClient),
+		fx.Provide(payment.NewClient),
 	)
 }

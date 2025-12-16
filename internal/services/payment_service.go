@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/utils"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/client/zalo/payment"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/infrastructure/persistence/repositories"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 )
@@ -20,80 +22,106 @@ const (
 )
 
 type PaymentService struct {
-	orderRepository *repositories.OrderRepository
-	cfg             *config.Config
+	orderRepository   *repositories.OrderRepository
+	zaloPaymentClient *payment.ZaloPaymentClient
+	cfg               *config.Config
 }
 
-func NewPaymentService(orderRepo *repositories.OrderRepository, cfg *config.Config) *PaymentService {
+func NewPaymentService(orderRepo *repositories.OrderRepository, zaloPaymentClient *payment.ZaloPaymentClient, cfg *config.Config) *PaymentService {
 	return &PaymentService{
-		orderRepository: orderRepo,
-		cfg:             cfg,
+		orderRepository:   orderRepo,
+		zaloPaymentClient: zaloPaymentClient,
+		cfg:               cfg,
 	}
 }
 
 func (s *PaymentService) ProcessNotifyCallback(ctx context.Context, req *dto.NofityCallbackRequest) (*dto.NofityCallbackResponse, *common.Error) {
 
+	// 1. Verify Message Authentication Code (HMAC-SHA256)
+	// data = 'appId={appId}&orderId={orderId}&method={method}'
+	dataForMac := fmt.Sprintf("appId=%s&orderId=%s&method=%s",
+		req.Data.AppID, req.Data.OrderID, req.Data.Method)
+
+	mac := utils.ComputeHmac256(dataForMac, s.cfg.ZaloAppSecret)
+	if mac != req.Mac {
+		// Log for debugging
+		fmt.Printf("Invalid MAC: calculated %s, received %s\n", mac, req.Mac)
+		return &dto.NofityCallbackResponse{
+			ReturnCode:    -1,
+			ReturnMessage: "mac not equal",
+		}, nil
+	}
+
+	// 2. Start background job to check status after 5 minutes
+	go s.deferredCheckOrderStatus(req.Data.OrderID)
+
 	return &dto.NofityCallbackResponse{
 		ReturnCode:    1,
 		ReturnMessage: "success",
 	}, nil
-	// // 1. Verify Message Authentication Code (HMAC-SHA256)
-	// // data = 'appId={appId}&orderId={orderId}&method={method}'
-	// dataForMac := fmt.Sprintf("appId=%s&orderId=%s&method=%s",
-	// 	req.Data.AppID, req.Data.OrderID, req.Data.Method)
+}
 
-	// mac := utils.ComputeHmac256(dataForMac, s.cfg.ZaloAppSecret)
-	// if mac != req.Mac {
-	// 	// Log for debugging
-	// 	fmt.Printf("Invalid MAC: calculated %s, received %s\n", mac, req.Mac)
-	// 	return &dto.NofityCallbackResponse{
-	// 		ReturnCode:    -1,
-	// 		ReturnMessage: "mac not equal",
-	// 	}, nil
-	// }
+func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
+	// Wait for 5 minutes
+	time.Sleep(5 * time.Minute)
 
-	// // 2. Parse Order ID
-	// orderIDUint64, err := strconv.ParseUint(req.Data.OrderID, 10, 32)
-	// if err != nil {
-	// 	return &dto.NofityCallbackResponse{
-	// 		ReturnCode:    -1,
-	// 		ReturnMessage: "invalid order id format",
-	// 	}, nil
-	// }
-	// orderID := uint(orderIDUint64)
+	ctx := context.Background()
+	fmt.Printf("Starting deferred check for Zalo Order ID: %s\n", zaloOrderID)
 
-	// // 3. Update Order Satus
-	// order, errSvc := s.orderRepository.GetOrder(ctx, orderID)
-	// if errSvc != nil {
-	// 	return &dto.NofityCallbackResponse{
-	// 		ReturnCode:    -1,
-	// 		ReturnMessage: "order not found",
-	// 	}, nil
-	// }
+	// Get Order Status from Zalo
+	orderStatus, err := s.zaloPaymentClient.GetOrderStatus(ctx, s.cfg, zaloOrderID)
+	if err != nil {
+		fmt.Printf("deferredCheckOrderStatus: failed to get status for %s: %v\n", zaloOrderID, err)
+		return
+	}
 
-	// // Check if already paid or final state
-	// if order.Status == "success" {
-	// 	return &dto.NofityCallbackResponse{
-	// 		ReturnCode:    1,
-	// 		ReturnMessage: "success",
-	// 	}, nil
-	// }
+	// Only proceed if payment is successful
+	if orderStatus.Error != 0 || orderStatus.Data.ReturnCode != 1 {
+		fmt.Printf("deferredCheckOrderStatus: order %s not successful or error. ReturnCode: %d, Error: %d\n",
+			zaloOrderID, orderStatus.Data.ReturnCode, orderStatus.Error)
+		return
+	}
 
-	// // Update status
-	// order.Status = "success"
-	// order.TransactionID = &req.Data.OrderID
+	// Parse ExtraData to get internal Order ID
+	var extraDataMap map[string]interface{}
+	if err := json.Unmarshal([]byte(orderStatus.Data.ExtraData), &extraDataMap); err != nil {
+		fmt.Printf("deferredCheckOrderStatus: failed to parse extradata for %s: %v\n", zaloOrderID, err)
+		return
+	}
 
-	// if errSvc := s.orderRepository.UpdateOrder(ctx, order); errSvc != nil {
-	// 	return &dto.NofityCallbackResponse{
-	// 		ReturnCode:    -1,
-	// 		ReturnMessage: "database update failed",
-	// 	}, nil
-	// }
+	pkOrderIDFloat, ok := extraDataMap["pk_order_id"].(float64)
+	if !ok {
+		fmt.Printf("deferredCheckOrderStatus: pk_order_id not found in extradata for %s\n", zaloOrderID)
+		return
+	}
+	orderID := uint(pkOrderIDFloat)
 
-	// return &dto.NofityCallbackResponse{
-	// 	ReturnCode:    1,
-	// 	ReturnMessage: "success",
-	// }, nil
+	// Update Order Status in DB
+	order, errSvc := s.orderRepository.GetOrder(ctx, orderID)
+	if errSvc != nil {
+		fmt.Printf("deferredCheckOrderStatus: failed to get order %d: %v\n", orderID, errSvc)
+		return
+	}
+
+	// Idempotency check
+	if order.Status == "success" {
+		fmt.Printf("deferredCheckOrderStatus: order %d already success\n", orderID)
+		return
+	}
+
+	order.Status = "success"
+	// Ensure TransactionID is set if missing
+	if order.TransactionID == nil || *order.TransactionID == "" {
+		transID := orderStatus.Data.TransID // Assuming TransID is available in status response
+		order.TransactionID = &transID
+	}
+
+	if errSvc := s.orderRepository.UpdateOrder(ctx, order); errSvc != nil {
+		fmt.Printf("deferredCheckOrderStatus: failed to update order %d: %v\n", orderID, errSvc)
+		return
+	}
+
+	fmt.Printf("deferredCheckOrderStatus: successfully updated order %d to success\n", orderID)
 }
 
 func (s *PaymentService) ProcessOrderCallback(ctx context.Context, req *dto.OrderCallbackRequest) (*dto.OrderCallbackResponse, *common.Error) {

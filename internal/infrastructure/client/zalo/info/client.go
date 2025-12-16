@@ -1,4 +1,4 @@
-package zalo
+package info
 
 import (
 	"context"
@@ -15,27 +15,27 @@ const (
 	zaloGraphURL   = "https://graph.zalo.me/v2.0/me/info"
 )
 
-// Client is the Zalo API client.
-type Client struct {
+// ZaloInfoClient is the Zalo API client.
+type ZaloInfoClient struct {
 	httpClient *http.Client
 	baseURL    string
 }
 
 // NewClient creates a new Zalo client.
-func NewClient(httpClient *http.Client) *Client {
+func NewClient(httpClient *http.Client) *ZaloInfoClient {
 	if httpClient == nil {
 		httpClient = &http.Client{
 			Timeout: defaultTimeout,
 		}
 	}
-	return &Client{
+	return &ZaloInfoClient{
 		httpClient: httpClient,
 		baseURL:    zaloGraphURL,
 	}
 }
 
 // GetPhoneNumber retrieves the user's phone number from Zalo API using the provided token.
-func (c *Client) GetPhoneNumber(ctx context.Context, accessToken, code, secretKey string) (*UserPhoneNumberResponse, error) {
+func (c *ZaloInfoClient) GetPhoneNumber(ctx context.Context, accessToken, code, secretKey string) (*UserPhoneNumberResponse, error) {
 	log.Info(ctx, "GetPhoneNumber start", "baseURL", c.baseURL)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL, nil)

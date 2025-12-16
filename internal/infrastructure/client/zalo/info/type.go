@@ -1,4 +1,4 @@
-package zalo
+package info
 
 // UserInfo represents the user information returned by Zalo API.
 type UserInfo struct {
