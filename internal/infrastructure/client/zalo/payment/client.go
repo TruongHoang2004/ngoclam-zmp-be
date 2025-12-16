@@ -58,6 +58,8 @@ func (c *ZaloPaymentClient) GetOrderStatus(ctx context.Context, config *config.C
 
 	targetURLWithParams := targetURL + "?" + params.Encode()
 
+	log.Debug(ctx, fmt.Sprintf("GetOrderStatus targetURLWithParams: %s", targetURLWithParams))
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURLWithParams, nil)
 	if err != nil {
 		log.Error(ctx, "GetOrderStatus: failed to create request", "error", err)
