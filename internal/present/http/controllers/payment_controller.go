@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/log"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -21,9 +22,12 @@ func NewPaymentController(baseController *baseController, paymentService *servic
 	}
 }
 
-func (c *PaymentController) ZaloCallback(ctx *gin.Context) {
+func (c *PaymentController) NotifyCallback(ctx *gin.Context) {
 
 	var req dto.NofityCallbackRequest
+
+	log.Info(ctx.Request.Context(), "NotifyCallback: %v", req)
+
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		c.ErrorData(ctx, common.ErrBadRequest(ctx.Request.Context()).SetDetail(err.Error()))
 		return
@@ -46,6 +50,8 @@ func (c *PaymentController) OrderCallback(ctx *gin.Context) {
 		return
 	}
 
+	log.Info(ctx.Request.Context(), "OrderCallback: %v", req)
+
 	res, err := c.paymentService.ProcessOrderCallback(ctx.Request.Context(), &req)
 	if err != nil {
 		c.ErrorData(ctx, err)
@@ -58,7 +64,7 @@ func (c *PaymentController) OrderCallback(ctx *gin.Context) {
 func (c *PaymentController) RegisterRoutes(r *gin.RouterGroup) {
 	payment := r.Group("/payment")
 	{
-		payment.POST("/notify-callback", c.ZaloCallback)
+		payment.POST("/notify-callback", c.NotifyCallback)
 		payment.POST("/order-callback", c.OrderCallback)
 	}
 }
