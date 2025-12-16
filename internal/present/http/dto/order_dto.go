@@ -50,3 +50,8 @@ type CreateOrderResponse struct {
 	ZaloParams *ZaloOrderParams `json:"zalo_params"`
 	MAC        string           `json:"mac"` // Deprecated but keeping for now
 }
+
+type OrderSubmitRequest struct {
+	OrderID     uint   `json:"order_id" validate:"required"`
+	ZaloOrderID string `json:"zalo_order_id" validate:"required"`
+}
