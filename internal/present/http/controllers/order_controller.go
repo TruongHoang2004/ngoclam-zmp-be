@@ -94,6 +94,6 @@ func (c *OrderController) RegisterRoutes(r *gin.RouterGroup) {
 		orders.POST("", c.CreateOrder)
 		orders.GET("", c.ListOrders)
 		orders.GET("/:id", c.GetOrder)
-		orders.POST("/submit", c.OderSubmit)
+		orders.PUT("/submit", c.OderSubmit)
 	}
 }
