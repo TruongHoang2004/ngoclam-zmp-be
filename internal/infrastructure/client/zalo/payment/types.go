@@ -34,7 +34,7 @@ type GetOrderStatusResponse struct {
 		Method          string `json:"method"`
 		Amount          int64  `json:"amount"`
 		TransTime       int64  `json:"transTime"`
-		MerchantTransID string `json:"merchantTransId"`
+		MerchantTransID int64  `json:"merchantTransId"`
 		Extradata       string `json:"extradata"`
 		SubResultCode   int    `json:"subResultCode"`
 		UpdateAt        int64  `json:"updateAt"`
