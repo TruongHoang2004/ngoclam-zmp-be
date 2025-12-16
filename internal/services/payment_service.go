@@ -77,6 +77,8 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 		return
 	}
 
+	log.Debug(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s status: %v\n", zaloOrderID, orderStatus))
+
 	// Only proceed if payment is successful
 	if orderStatus.Error != 0 || orderStatus.Data.ReturnCode != 1 {
 		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s not successful or error. ReturnCode: %d, Error: %d\n",
