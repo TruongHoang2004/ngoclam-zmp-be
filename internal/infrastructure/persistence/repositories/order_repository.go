@@ -25,6 +25,17 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, order *model.Order) *
 	return nil
 }
 
+func (r *OrderRepository) GetOrderByID(ctx context.Context, id string) (*model.Order, *common.Error) {
+	var order model.Order
+	if err := r.db.Where("id = ?", id).First(&order).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, common.ErrNotFound(ctx, "Order", "not found")
+		}
+		return nil, common.ErrSystemError(ctx, err.Error())
+	}
+	return &order, nil
+}
+
 func (r *OrderRepository) GetOrder(ctx context.Context, id string) (*model.Order, *common.Error) {
 	var order model.Order
 	if err := r.db.Preload("OrderItems").First(&order, id).Error; err != nil {
