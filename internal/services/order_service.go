@@ -93,8 +93,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 		Address: req.CustomerInfo.Address,
 	}
 
+	orderID := utils.GenerateUniqueOrderID()
+
 	order := &model.Order{
-		ID:           utils.GenerateUniqueOrderID(),
+		ID:           orderID,
 		CustomerInfo: custInfo,
 		TotalAmount:  totalAmount,
 		Status:       "pending",
@@ -109,7 +111,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 	// 4. Generate Zalo Params
 	// Parameters: amount, desc, item, extradata, method
 	amount := order.TotalAmount.IntPart()
-	desc := utils.GenerateUniqueOrderID()
+	desc := orderID
 
 	// Item: JSON string of items (simplified)
 	type zaloItem struct {
@@ -133,7 +135,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 
 	// Extradata: {"pk_order_id": order.ID}
 	extraDataMap := map[string]interface{}{
-		"pk_order_id": order.ID,
+		"pk_order_id": orderID,
 	}
 	extraDataBytes, _ := json.Marshal(extraDataMap)
 	extraDataStr := string(extraDataBytes)
