@@ -38,7 +38,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, id string) (*model.O
 
 func (r *OrderRepository) GetOrder(ctx context.Context, id string) (*model.Order, *common.Error) {
 	var order model.Order
-	if err := r.db.Preload("OrderItems").First(&order, id).Error; err != nil {
+	if err := r.db.Where("id = ?", id).Preload("OrderItems").First(&order).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, common.ErrNotFound(ctx, "Order", "not found")
 		}
