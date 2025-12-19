@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
@@ -226,7 +227,13 @@ func (s *PaymentService) ProcessOrderCallback(ctx context.Context, req *dto.Orde
 
 func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.WebhookReceiverRequest) *common.Error {
 
-	order, errSvc := s.orderRepository.GetOrder(ctx, req.Description)
+	contentParts := strings.Fields(req.Content)
+	if len(contentParts) == 0 {
+		return common.ErrBadRequest(ctx)
+	}
+	responseOrderID := contentParts[0]
+
+	order, errSvc := s.orderRepository.GetOrder(ctx, responseOrderID)
 	if errSvc != nil {
 		return common.ErrNotFound(ctx, "Order", "not found")
 	}
