@@ -69,8 +69,8 @@ func (s *PaymentService) ProcessNotifyCallback(ctx context.Context, req *dto.Nof
 }
 
 func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
-	// Wait for 1 minutes
-	time.Sleep(1 * time.Minute)
+	// Wait for 5 minutes
+	time.Sleep(5 * time.Minute)
 
 	ctx := context.Background()
 	log.Debug(ctx, fmt.Sprintf("Starting deferred check for Zalo Order ID: %s\n", zaloOrderID))
@@ -262,6 +262,8 @@ func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.We
 	}
 
 	defer resp.Body.Close()
+
+	log.Debug(ctx, fmt.Sprintf("Notify Zalo Mini App success: %s\n", order.ID))
 
 	return nil
 }
