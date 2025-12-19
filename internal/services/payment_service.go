@@ -59,9 +59,6 @@ func (s *PaymentService) ProcessNotifyCallback(ctx context.Context, req *dto.Nof
 		}, nil
 	}
 
-	// 2. Start background job to check status after 5 minutes
-	go s.deferredCheckOrderStatus(req.Data.OrderID)
-
 	return &dto.NofityCallbackResponse{
 		ReturnCode:    1,
 		ReturnMessage: "success",
@@ -269,6 +266,9 @@ func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.We
 
 	log.Debug(ctx, fmt.Sprintf("Notify Zalo Mini App response status: %s", resp.Status))
 	log.Debug(ctx, fmt.Sprintf("Notify Zalo Mini App success: %s\n", order.ID))
+
+	// 2. Check order status after 5 minutes
+	s.deferredCheckOrderStatus(*order.ZaloOrderID)
 
 	return nil
 }

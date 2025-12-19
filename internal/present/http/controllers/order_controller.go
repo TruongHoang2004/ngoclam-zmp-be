@@ -71,11 +71,27 @@ func (c *OrderController) GetOrder(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(order))
 }
 
+func (c *OrderController) UpdateOrder(ctx *gin.Context) {
+	var req dto.UpdateOrderRequest
+	if err := c.BindAndValidateRequest(ctx, &req); err != nil {
+		c.ErrorData(ctx, err)
+		return
+	}
+
+	if err := c.orderService.UpdateOrder(ctx.Request.Context(), &req); err != nil {
+		c.ErrorData(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, httpCommon.NewSuccessResponse(nil))
+}
+
 func (c *OrderController) RegisterRoutes(r *gin.RouterGroup) {
 	orders := r.Group("/orders")
 	{
 		orders.POST("", c.CreateOrder)
 		orders.GET("", c.ListOrders)
 		orders.GET("/:id", c.GetOrder)
+		orders.PUT("/", c.UpdateOrder)
 	}
 }

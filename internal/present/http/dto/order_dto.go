@@ -29,7 +29,7 @@ type CreateOrderRequest struct {
 }
 
 type OrderResponse struct {
-	ID          uint            `json:"id"`
+	ID          string          `json:"id"`
 	TotalAmount decimal.Decimal `json:"total_amount"`
 	Status      string          `json:"status"`
 	CreatedAt   time.Time       `json:"created_at"`
@@ -52,6 +52,13 @@ type CreateOrderResponse struct {
 }
 
 type OrderSubmitRequest struct {
-	OrderID     uint   `json:"order_id" validate:"required"`
+	OrderID     string `json:"order_id" validate:"required"`
 	ZaloOrderID string `json:"zalo_order_id" validate:"required"`
+}
+
+type UpdateOrderRequest struct {
+	OrderID       string  `json:"order_id" validate:"required"`
+	ZaloOrderID   *string `json:"zalo_order_id"`
+	Status        *string `json:"status"`
+	TransactionID *string `json:"transaction_id"`
 }
