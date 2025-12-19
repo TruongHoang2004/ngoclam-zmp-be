@@ -227,11 +227,14 @@ func (s *PaymentService) ProcessOrderCallback(ctx context.Context, req *dto.Orde
 
 func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.WebhookReceiverRequest) *common.Error {
 
+	log.Debug(ctx, fmt.Sprintf("ProcessWebhookReceiver: received content: %s", req.Content))
+
 	contentParts := strings.Fields(req.Content)
 	if len(contentParts) == 0 {
 		return common.ErrBadRequest(ctx)
 	}
 	responseOrderID := contentParts[0]
+	log.Debug(ctx, fmt.Sprintf("ProcessWebhookReceiver: parsed order ID: %s", responseOrderID))
 
 	order, errSvc := s.orderRepository.GetOrder(ctx, responseOrderID)
 	if errSvc != nil {
@@ -255,6 +258,7 @@ func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.We
 	})
 
 	zaloURL := fmt.Sprintf("https://payment-mini.zalo.me/api/transaction/%s/bank-callback-payment", s.cfg.ZaloAppID)
+	log.Debug(ctx, fmt.Sprintf("ProcessWebhookReceiver: sending to Zalo Mini App URL: %s, payload: %s", zaloURL, string(payload)))
 
 	resp, err := http.Post(zaloURL, "application/json", bytes.NewBuffer(payload))
 	if err != nil {
@@ -263,6 +267,7 @@ func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.We
 
 	defer resp.Body.Close()
 
+	log.Debug(ctx, fmt.Sprintf("Notify Zalo Mini App response status: %s", resp.Status))
 	log.Debug(ctx, fmt.Sprintf("Notify Zalo Mini App success: %s\n", order.ID))
 
 	return nil
