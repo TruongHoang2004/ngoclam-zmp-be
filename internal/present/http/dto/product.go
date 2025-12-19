@@ -90,10 +90,12 @@ type UpdateProductRequest struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Price       *int64  `json:"price,omitempty"`
+	CategoryID  *uint   `json:"category_id,omitempty"`
 }
 
 type ProductResponse struct {
 	ID          uint                     `json:"id"`
+	CategoryID  uint                     `json:"category_id"`
 	Name        string                   `json:"name"`
 	Description string                   `json:"description"`
 	Price       int64                    `json:"price"`
@@ -123,6 +125,7 @@ func NewProductResponse(m *model.Product) *ProductResponse {
 
 	return &ProductResponse{
 		ID:          m.ID,
+		CategoryID:  m.CategoryID,
 		Name:        m.Name,
 		Description: desc,
 		Price:       m.Price,

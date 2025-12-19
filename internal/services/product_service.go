@@ -91,6 +91,9 @@ func (s *ProductService) UpdateProduct(ctx context.Context, product *dto.UpdateP
 	if product.Price != nil {
 		productmodel.Price = *product.Price
 	}
+	if product.CategoryID != nil {
+		productmodel.CategoryID = *product.CategoryID
+	}
 
 	return s.productRepository.UpdateProduct(ctx, productmodel)
 }

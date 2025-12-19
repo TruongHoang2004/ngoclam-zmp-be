@@ -6,6 +6,7 @@ import (
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common/log"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/http/dto"
+	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/present/middleware"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -61,10 +62,29 @@ func (c *PaymentController) OrderCallback(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
+func (c *PaymentController) WebhookReceiver(ctx *gin.Context) {
+	var req dto.WebhookReceiverRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		c.ErrorData(ctx, common.ErrBadRequest(ctx.Request.Context()).SetDetail(err.Error()))
+		return
+	}
+
+	log.Info(ctx.Request.Context(), "WebhookReceiver: %v", req)
+
+	err := c.paymentService.ProcessWebhookReceiver(ctx.Request.Context(), &req)
+	if err != nil {
+		c.ErrorData(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
+}
+
 func (c *PaymentController) RegisterRoutes(r *gin.RouterGroup) {
 	payment := r.Group("/payment")
 	{
 		payment.POST("/notify-callback", c.NotifyCallback)
 		payment.POST("/order-callback", c.OrderCallback)
+		payment.POST("/webhook", middleware.APIKeyChecker(), c.WebhookReceiver)
 	}
 }

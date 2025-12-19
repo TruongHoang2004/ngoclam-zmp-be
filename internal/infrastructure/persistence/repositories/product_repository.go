@@ -139,6 +139,7 @@ func (r *ProductRepository) UpdateProduct(ctx context.Context, product *model.Pr
 		Name:        product.Name,
 		Description: product.Description,
 		Price:       product.Price,
+		CategoryID:  product.CategoryID,
 	}
 	err := r.db.WithContext(ctx).Model(m).Updates(m).Error
 	if err != nil {

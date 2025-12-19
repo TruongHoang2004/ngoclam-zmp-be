@@ -1,9 +1,11 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -112,23 +114,23 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 		return
 	}
 
-	pkOrderIDFloat, ok := extraDataMap["pk_order_id"].(float64)
+	pkOrderID, ok := extraDataMap["pk_order_id"].(string)
 	if !ok {
 		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: pk_order_id not found in extradata for %s\n", zaloOrderID))
 		return
 	}
-	orderID := uint(pkOrderIDFloat)
+	orderID := pkOrderID
 
 	// Update Order Status in DB
 	order, errSvc := s.orderRepository.GetOrder(ctx, orderID)
 	if errSvc != nil {
-		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to get order %d: %v\n", orderID, errSvc))
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to get order %s: %v\n", orderID, errSvc))
 		return
 	}
 
 	// Idempotency check
 	if order.Status == string(model.OrderStatusCompleted) {
-		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %d already success\n", orderID))
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s already success\n", orderID))
 		return
 	}
 
@@ -140,11 +142,11 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	}
 
 	if errSvc := s.orderRepository.UpdateOrder(ctx, order); errSvc != nil {
-		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to update order %d: %v\n", orderID, errSvc))
+		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: failed to update order %s: %v\n", orderID, errSvc))
 		return
 	}
 
-	log.Info(ctx, fmt.Sprintf("deferredCheckOrderStatus: successfully updated order %d to success\n", orderID))
+	log.Info(ctx, fmt.Sprintf("deferredCheckOrderStatus: successfully updated order %s to success\n", orderID))
 }
 
 func (s *PaymentService) ProcessOrderCallback(ctx context.Context, req *dto.OrderCallbackRequest) (*dto.OrderCallbackResponse, *common.Error) {
@@ -171,14 +173,14 @@ func (s *PaymentService) ProcessOrderCallback(ctx context.Context, req *dto.Orde
 		}, nil
 	}
 
-	pkOrderIDFloat, ok := extraDataMap["pk_order_id"].(float64)
+	pkOrderID, ok := extraDataMap["pk_order_id"].(string)
 	if !ok {
 		return &dto.OrderCallbackResponse{
 			ReturnCode:    -1,
 			ReturnMessage: "pk_order_id not found in extradata",
 		}, nil
 	}
-	orderID := uint(pkOrderIDFloat)
+	orderID := pkOrderID
 
 	// 3. Update Order Status
 	order, errSvc := s.orderRepository.GetOrder(ctx, orderID)
@@ -220,4 +222,39 @@ func (s *PaymentService) ProcessOrderCallback(ctx context.Context, req *dto.Orde
 		ReturnCode:    1,
 		ReturnMessage: "success",
 	}, nil
+}
+
+func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.WebhookReceiverRequest) *common.Error {
+
+	order, errSvc := s.orderRepository.GetOrder(ctx, req.Description)
+	if errSvc != nil {
+		return common.ErrNotFound(ctx, "Order", "not found")
+	}
+
+	order.Status = string(model.OrderStatusPaid)
+
+	s.orderRepository.UpdateOrder(ctx, order)
+
+	// Notify Zalo Mini App
+	resultCode := 1
+	dataForMac := fmt.Sprintf("appId=%s&orderId=%s&resultCode=%d", s.cfg.ZaloAppID, order.ID, resultCode)
+	mac := utils.ComputeHmac256(dataForMac, s.cfg.ZaloAppSecret)
+
+	payload, _ := json.Marshal(map[string]interface{}{
+		"appId":      s.cfg.ZaloAppID,
+		"orderId":    order.ZaloOrderID,
+		"resultCode": resultCode,
+		"mac":        mac,
+	})
+
+	zaloURL := fmt.Sprintf("https://payment-mini.zalo.me/api/transaction/%s/bank-callback-payment", s.cfg.ZaloAppID)
+
+	resp, err := http.Post(zaloURL, "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		return common.ErrSystemError(ctx, "Notify Zalo Mini App failed")
+	}
+
+	defer resp.Body.Close()
+
+	return nil
 }

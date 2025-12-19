@@ -25,7 +25,7 @@ const (
 )
 
 type Order struct {
-	ID            uint            `gorm:"primaryKey" json:"id"`
+	ID            string          `gorm:"primaryKey;type:varchar(255)" json:"id"`
 	CustomerInfo  *CustomerInfo   `gorm:"serializer:json;type:json" json:"customer_info,omitempty"`
 	TotalAmount   decimal.Decimal `gorm:"type:decimal(20,2)" json:"total_amount"`
 	Status        string          `gorm:"type:varchar(50);default:'pending'" json:"status"`
@@ -52,7 +52,7 @@ type ProductSnapshot struct {
 
 type OrderItem struct {
 	ID              uint             `gorm:"primaryKey" json:"id"`
-	OrderID         uint             `gorm:"index" json:"order_id"`
+	OrderID         string           `gorm:"index;type:varchar(255)" json:"order_id"`
 	ProductSnapshot *ProductSnapshot `gorm:"serializer:json;type:json" json:"product_snapshot"`
 	Quantity        int              `json:"quantity"`
 	Price           decimal.Decimal  `gorm:"type:decimal(20,2)" json:"price"`

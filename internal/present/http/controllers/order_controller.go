@@ -57,12 +57,11 @@ func (c *OrderController) ListOrders(ctx *gin.Context) {
 }
 
 func (c *OrderController) GetOrder(ctx *gin.Context) {
-	id, err := c.GetUintParam(ctx, "id")
+	id, err := c.GetStringParams(ctx, "id")
 	if err != nil {
 		c.ErrorData(ctx, err)
 		return
 	}
-
 	order, errSvc := c.orderService.GetOrder(ctx.Request.Context(), id)
 	if errSvc != nil {
 		c.ErrorData(ctx, errSvc)

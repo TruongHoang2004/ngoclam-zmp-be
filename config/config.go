@@ -18,6 +18,7 @@ type Config struct {
 	ZaloAppID          string
 	ZaloAppPrivateKey  string
 	ZaloAppSecret      string
+	WebhookApiKey      string
 }
 
 var AppConfig *Config
@@ -35,6 +36,7 @@ func InitConfig() *Config {
 		ZaloAppPrivateKey:  getEnv("ZALO_MINIAPP_PRIVATE_KEY", ""),
 		ZaloAppID:          getEnv("ZALO_APP_ID", ""),
 		ZaloAppSecret:      getEnv("ZALO_APP_SECRET", ""),
+		WebhookApiKey:      getEnv("WEBHOOK_API_KEY", ""),
 	}
 
 	return AppConfig

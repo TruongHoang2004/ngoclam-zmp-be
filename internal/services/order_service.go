@@ -94,6 +94,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 	}
 
 	order := &model.Order{
+		ID:           utils.GenerateUniqueOrderID(),
 		CustomerInfo: custInfo,
 		TotalAmount:  totalAmount,
 		Status:       "pending",
@@ -108,7 +109,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 	// 4. Generate Zalo Params
 	// Parameters: amount, desc, item, extradata, method
 	amount := order.TotalAmount.IntPart()
-	desc := fmt.Sprintf("Thanh toan don hang #%d", order.ID)
+	desc := utils.GenerateUniqueOrderID()
 
 	// Item: JSON string of items (simplified)
 	type zaloItem struct {
@@ -179,6 +180,6 @@ func (s *OrderService) ListOrders(ctx context.Context, page int, size int) ([]*m
 	return s.orderRepository.ListOrders(ctx, offset, size)
 }
 
-func (s *OrderService) GetOrder(ctx context.Context, id uint) (*model.Order, *common.Error) {
+func (s *OrderService) GetOrder(ctx context.Context, id string) (*model.Order, *common.Error) {
 	return s.orderRepository.GetOrder(ctx, id)
 }

@@ -25,7 +25,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, order *model.Order) *
 	return nil
 }
 
-func (r *OrderRepository) GetOrder(ctx context.Context, id uint) (*model.Order, *common.Error) {
+func (r *OrderRepository) GetOrder(ctx context.Context, id string) (*model.Order, *common.Error) {
 	var order model.Order
 	if err := r.db.Preload("OrderItems").First(&order, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
