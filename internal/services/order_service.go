@@ -195,13 +195,17 @@ func (s *OrderService) UpdateOrder(ctx context.Context, req *dto.UpdateOrderRequ
 		return err
 	}
 
+	log.Debug(ctx, "UpdateOrder: order %s status checked", order.ID)
 	if req.ZaloOrderID != nil {
+		log.Debug(ctx, "UpdateOrder: order %s zalo order id checked", order.ID)
 		order.ZaloOrderID = req.ZaloOrderID
 	}
 	if req.Status != nil {
+		log.Debug(ctx, "UpdateOrder: order %s status checked", order.ID)
 		order.Status = *req.Status
 	}
 	if req.TransactionID != nil {
+		log.Debug(ctx, "UpdateOrder: order %s transaction id checked", order.ID)
 		order.TransactionID = req.TransactionID
 	}
 	return s.orderRepository.UpdateOrder(ctx, order)

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/config"
 	"github.com/TruongHoang2004/ngoclam-zmp-backend/internal/common"
@@ -66,8 +65,6 @@ func (s *PaymentService) ProcessNotifyCallback(ctx context.Context, req *dto.Nof
 }
 
 func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
-	// Wait for 5 minutes
-	time.Sleep(5 * time.Minute)
 
 	ctx := context.Background()
 	log.Debug(ctx, fmt.Sprintf("Starting deferred check for Zalo Order ID: %s\n", zaloOrderID))
@@ -268,7 +265,10 @@ func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.We
 	log.Debug(ctx, fmt.Sprintf("Notify Zalo Mini App success: %s\n", order.ID))
 
 	// 2. Check order status after 5 minutes
-	s.deferredCheckOrderStatus(*order.ZaloOrderID)
+	if order.ZaloOrderID != nil {
+		go s.deferredCheckOrderStatus(*order.ZaloOrderID)
+		log.Debug(ctx, fmt.Sprintf("ProcessWebhookReceiver: order %s status checked", order.ID))
+	}
 
 	return nil
 }
