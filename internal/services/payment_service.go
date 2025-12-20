@@ -124,12 +124,12 @@ func (s *PaymentService) deferredCheckOrderStatus(zaloOrderID string) {
 	}
 
 	// Idempotency check
-	if order.Status == string(model.OrderStatusCompleted) {
+	if order.Status == model.OrderStatusCompleted {
 		log.Error(ctx, fmt.Sprintf("deferredCheckOrderStatus: order %s already success\n", orderID))
 		return
 	}
 
-	order.Status = string(currentStatus)
+	order.Status = currentStatus
 	// Ensure TransactionID is set if missing
 	if order.TransactionID == nil || *order.TransactionID == "" {
 		transID := orderStatus.Data.TransID // Assuming TransID is available in status response
@@ -235,7 +235,7 @@ func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.We
 		return common.ErrNotFound(ctx, "Order", "not found")
 	}
 
-	order.Status = string(model.OrderStatusPaid)
+	order.Status = model.OrderStatusPaying
 
 	s.orderRepository.UpdateOrder(ctx, order)
 

@@ -95,11 +95,18 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *dto.CreateOrderRequ
 
 	orderID := utils.GenerateUniqueOrderID()
 
+	orderStatus := model.OrderStatusFailed
+	if req.Payment.Method == "BANK" {
+		orderStatus = model.OrderStatusPaying
+	} else if req.Payment.Method == "COD" {
+		orderStatus = model.OrderStatusPending
+	}
+
 	order := &model.Order{
 		ID:           orderID,
 		CustomerInfo: custInfo,
 		TotalAmount:  totalAmount,
-		Status:       "pending",
+		Status:       orderStatus,
 		OrderItems:   orderItems,
 	}
 

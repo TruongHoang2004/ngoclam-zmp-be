@@ -17,6 +17,9 @@ run:
 clean:
 	rm -rf bin/ docs/docs.go docs/swagger.json docs/swagger.yaml
 
+seed:
+	go run cmd/seed/*.go
+
 # ==============================
 # Database migrations (Atlas)
 # ==============================

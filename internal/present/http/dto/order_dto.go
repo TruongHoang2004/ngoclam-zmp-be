@@ -57,8 +57,8 @@ type OrderSubmitRequest struct {
 }
 
 type UpdateOrderRequest struct {
-	OrderID       string  `json:"order_id" validate:"required"`
-	ZaloOrderID   *string `json:"zalo_order_id"`
-	Status        *string `json:"status"`
-	TransactionID *string `json:"transaction_id"`
+	OrderID       string             `json:"order_id" validate:"required"`
+	ZaloOrderID   *string            `json:"zalo_order_id"`
+	Status        *model.OrderStatus `json:"status"`
+	TransactionID *string            `json:"transaction_id"`
 }
