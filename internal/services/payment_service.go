@@ -235,7 +235,7 @@ func (s *PaymentService) ProcessWebhookReceiver(ctx context.Context, req *dto.We
 		return common.ErrNotFound(ctx, "Order", "not found")
 	}
 
-	order.Status = model.OrderStatusPaying
+	order.Status = model.OrderStatusProcessing
 
 	s.orderRepository.UpdateOrder(ctx, order)
 
