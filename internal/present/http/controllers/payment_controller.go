@@ -77,7 +77,7 @@ func (c *PaymentController) WebhookReceiver(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "OK"})
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 func (c *PaymentController) RegisterRoutes(r *gin.RouterGroup) {
