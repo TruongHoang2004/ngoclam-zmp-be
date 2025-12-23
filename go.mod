@@ -8,6 +8,7 @@ require (
 	ariga.io/atlas-provider-gorm v0.6.0
 	github.com/gin-gonic/gin v1.10.1
 	github.com/shopspring/decimal v1.4.0
+	github.com/zsais/go-gin-prometheus v1.0.2
 	go.uber.org/fx v1.24.0
 	go.uber.org/zap v1.26.0
 	gorm.io/gorm v1.30.1
@@ -67,7 +68,6 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
-	github.com/zsais/go-gin-prometheus v1.0.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.37.0 // indirect

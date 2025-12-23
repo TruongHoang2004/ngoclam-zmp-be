@@ -5,7 +5,7 @@ import (
 	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zsais/go-gin-prometheus"
+	ginprometheus "github.com/zsais/go-gin-prometheus"
 	"go.uber.org/fx"
 )
 
@@ -35,11 +35,11 @@ func registerRoutes(
 var RouterModule = fx.Options(
 	fx.Provide(func() *gin.Engine {
 		r := gin.Default()
-
-		r.Use(cors.Default())
 		p := ginprometheus.NewWithConfig(ginprometheus.Config{
 			Subsystem: "gin",
 		})
+		p.Use(r)
+		r.Use(cors.Default())
 
 		return r
 	}),
